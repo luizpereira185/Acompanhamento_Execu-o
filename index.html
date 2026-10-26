@@ -207,7 +207,8 @@ function drawChart(s){
   const st=stopStart(s),en=stopEnd(s),now=Date.now();
   const hist=(s.hist||[]).slice().sort((a,b)=>a.t-b.t);
   const lastT=hist.length?hist[hist.length-1].t:0;
-  const axisEnd=Math.max(en,lastT),span=axisEnd-st;
+  const axisEnd=Math.max(en,lastT);
+  const span=Math.max(1,axisEnd-st);
   const X=t=>L+(clamp(t,st,axisEnd)-st)/span*(W-L-R);
   const Y=v=>H-B-(clamp(v,0,100)/100)*(H-T-B);
   let g='';
@@ -220,16 +221,42 @@ function drawChart(s){
     g+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${H-B}" stroke="var(--border)" stroke-dasharray="2,4"/><text x="${x}" y="${H-B+16}" font-size="11" text-anchor="middle" fill="var(--muted)">${lab}</text>`;
   }
   let pp='';for(let i=0;i<=60;i++){const t=st+i/60*span;pp+=(i?'L':'M')+X(t).toFixed(1)+','+Y(plannedAt(s,t)).toFixed(1)+' '}
-  const real=[{t:st,pct:0},...hist];
-  const cp=overall(s);
-  if(now>st&&now>lastT)real.push({t:Math.min(now,axisEnd),pct:cp});
-  let rp='';real.forEach((p,i)=>{rp+=(i?'L':'M')+X(p.t).toFixed(1)+','+Y(p.pct).toFixed(1)+' '});
-  const lastP=real[real.length-1];
+
+  // Realizado: suaviza a ligação entre os pontos históricos usando curvas cúbicas.
+  // Se o progresso foi lançado antes do início programado, distribui visualmente
+  // a evolução no intervalo da parada para evitar uma linha vertical no eixo.
+  let points=[{t:st,pct:0},...hist.filter(p=>p.t>=st&&p.t<=axisEnd)];
+  if(hist.length && hist.every(p=>p.t<st)){
+    const pct=clamp(+hist[hist.length-1].pct||0,0,100);
+    points=[{t:st,pct:0},{t:st+span*0.45,pct:pct},{t:axisEnd,pct:pct}];
+  }else if(hist.length && hist[0].t<st){
+    points=[{t:st,pct:0},...hist.filter(p=>p.t>=st&&p.t<=axisEnd)];
+  }
+  if(now>=st&&now<=axisEnd){
+    const last=points[points.length-1];
+    if(!last||now>last.t)points.push({t:now,pct:overall(s)});
+  }
+  const clean=[];
+  for(const p of points){
+    const q={x:X(p.t),y:Y(p.pct)};
+    if(!clean.length||q.x>clean[clean.length-1].x+0.5)clean.push(q);
+    else clean[clean.length-1]=q;
+  }
+  let rp='';
+  if(clean.length===1)rp=`M${clean[0].x},${clean[0].y}`;
+  else if(clean.length>1){
+    rp=`M${clean[0].x.toFixed(1)},${clean[0].y.toFixed(1)}`;
+    for(let i=0;i<clean.length-1;i++){
+      const a=clean[i],b=clean[i+1],dx=(b.x-a.x)/3;
+      rp+=` C${(a.x+dx).toFixed(1)},${a.y.toFixed(1)} ${(b.x-dx).toFixed(1)},${b.y.toFixed(1)} ${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+    }
+  }
+  const lastP=clean[clean.length-1]||{x:X(st),y:Y(0)};
   let nowLine='';if(now>=st&&now<=axisEnd)nowLine=`<line x1="${X(now)}" y1="${T}" x2="${X(now)}" y2="${H-B}" stroke="var(--dsm-purple)" stroke-dasharray="3,3"/><text x="${X(now)}" y="${T+10}" font-size="10" text-anchor="middle" fill="var(--dsm-purple)">agora</text>`;
   svg.innerHTML=g+nowLine+
     `<path d="${pp}" fill="none" stroke="var(--planned)" stroke-width="2.2" stroke-dasharray="5,4"/>`+
-    `<path d="${rp}" fill="none" stroke="var(--actual)" stroke-width="2.8" stroke-linejoin="round"/>`+
-    `<circle cx="${X(lastP.t)}" cy="${Y(lastP.pct)}" r="4.5" fill="var(--actual)"/>`;
+    `<path d="${rp}" fill="none" stroke="var(--actual)" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>`+
+    `<circle cx="${lastP.x}" cy="${lastP.y}" r="4.5" fill="var(--actual)"/>`;
 }
 
 function cardsHtml(s){
