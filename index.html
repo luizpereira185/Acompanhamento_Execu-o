@@ -82,7 +82,7 @@ svg{width:100%;height:auto;overflow:visible;display:block}
 .fotoPrev{margin-top:6px;display:flex;align-items:center;gap:8px}
 .fotoPrev img{max-width:90px;max-height:70px;border-radius:6px;border:1px solid var(--border);object-fit:cover}
 .fotoRemove{font-size:10.5px;color:var(--muted);cursor:pointer}
-.quick{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}\n.timeRow{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0}.timeRow label{flex:1;min-width:145px}.timeRow input{margin-top:6px;min-height:42px;font-size:14px;border-radius:9px}.timeFields{display:grid;grid-template-columns:minmax(150px,1.35fr) minmax(110px,.8fr);gap:8px;flex:1;min-width:260px;padding:10px;background:color-mix(in srgb,var(--accent) 7%,var(--card));border:1px solid var(--border);border-radius:11px}.timeFields label{font-size:11px;font-weight:700;color:var(--fg)}.timeFields input{width:100%;background:var(--card);font-weight:600}.timeTitle{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--brand)}.timeHint{font-size:11px;color:var(--muted);margin-top:4px}.timeAction{min-height:42px;font-weight:700!important}
+.quick{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}
 .dtRow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}.dtRow input{margin:0;width:auto;font-size:11.5px;padding:5px 8px}.dtLab{font-size:11px;font-weight:700;color:var(--brand)}.dtWarn{font-size:10.5px}
 @media(max-width:700px){.formgrid,.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.pctbox{min-width:100%}}
 @media print{header,nav.tabs,.noprint,.obsRow .fotoBtn,.quick{display:none!important}.row,.panel,.chartbox{break-inside:avoid}#tabProg{display:none!important}#tabExec{display:block!important}}
@@ -146,7 +146,7 @@ svg{width:100%;height:auto;overflow:visible;display:block}
     <button class="secondary" id="impJsonBtn">Restaurar backup</button>
     <input type="file" id="impJson" accept=".json" hidden>
   </div>
-  <div class="muted noprint" style="margin-top:6px">Os dados ficam salvos neste navegador. Use o backup para levar para outro aparelho.</div>
+  <div class="muted noprint" style="margin-top:6px">Os dados são sincronizados pela nuvem (Firebase) e também ficam salvos neste navegador. Use o backup como cópia de segurança.</div>
 </section>
 </div>
 <datalist id="areasList"></datalist>
@@ -156,7 +156,7 @@ svg{width:100%;height:auto;overflow:visible;display:block}
 const $=s=>document.querySelector(s);
 const KEY='execucao_paradas_v1';
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function norm(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim()}
+function norm(s){return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
 function uid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function pad(n){return String(n).padStart(2,'0')}
 function toLocalInput(ms){
@@ -219,20 +219,13 @@ function stopEnd(s){return stopStart(s)+Math.max(0.5,+s.hours||8)*36e5}
 function stopEndKey(s){return dateKey(new Date(stopEnd(s)-1))}
 function overall(s){const t=s.tasks||[];return t.length?t.reduce((a,x)=>a+(+x.pct||0),0)/t.length:0}
 function plannedAt(s,t){const st=stopStart(s),en=stopEnd(s);return smoothstep(clamp((t-st)/(en-st),0,1))*100}
-function record(s,task){
-  // O percentual da atividade é salvo, mas não cria ponto automático na Curva S.
-  // A curva recebe um novo ponto somente ao clicar em "Atualizar acompanhamento".
-  // Isso evita saltos causados por vários lançamentos no mesmo minuto.
-}
 
 /* ===================== curva S ===================== */
 function drawChart(s){
   const svg=$('#chart');if(!svg)return;
   const W=640,H=260,L=42,R=18,T=14,B=38;
   const st=stopStart(s),en=stopEnd(s),reference=referenceTime(s);
-  // A Curva S real nasce da data/hora lançada em cada atividade.
   const hist=curvePoints(s);
-  // O eixo termina no fim programado ou no horário de referência escolhido, nunca no relógio do computador.
   const axisStart=Math.min(st,...hist.map(p=>p.t));
   const axisEnd=Math.max(en,reference,...hist.map(p=>p.t));
   const span=Math.max(1,axisEnd-axisStart);
@@ -248,13 +241,11 @@ function drawChart(s){
     const lab=hrs<=30?`${pad(d.getHours())}:${pad(d.getMinutes())}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}h`;
     g+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${H-B}" stroke="var(--border)" stroke-dasharray="2,4"/><text x="${x}" y="${H-B+16}" font-size="11" text-anchor="middle" fill="var(--muted)">${lab}</text>`;
   }
-  // Planejado original: continua ancorado ao início e término cadastrados.
   let pp='';
   for(let i=0;i<=80;i++){
     const t=axisStart+i/80*span;
     pp+=(i?'L':'M')+X(t).toFixed(1)+','+Y(plannedAt(s,t)).toFixed(1)+' ';
   }
-  // Realizado: acumulado das atividades com data/hora lançada.
   const points=[{t:st,pct:0},...hist.map(p=>({t:+p.t,pct:clamp(+p.pct||0,0,100)}))];
   const clean=[];
   for(const p of points){
@@ -612,7 +603,7 @@ $('#expCsv').onclick=()=>{
   const s=cur();if(!s){alert('Cadastre uma parada primeiro.');return}
   const rows=[['Parada','Área','Data','Ordem','Criticidade','Atividade','Equipe','Local','% executado','Data/hora lançamento','Observações','Ação'],
     ...(s.tasks||[]).map(t=>[s.name,s.area,fmtDate(s.date),t.ordem,t.crit,t.name,t.team,t.local,t.pct,hasDt(t)?new Date(+t.dt).toLocaleString('pt-BR'):'',t.obs,t.acao])];
-  baixar(new Blob(['﻿'+rows.map(r=>r.map(csvEsc).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8;'}),'relatorio-'+norm(s.area).replace(/\W+/g,'-')+'-'+s.date+'.csv');
+  baixar(new Blob(['\ufeff'+rows.map(r=>r.map(csvEsc).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8;'}),'relatorio-'+norm(s.area).replace(/\W+/g,'-')+'-'+s.date+'.csv');
 };
 $('#printBtn').onclick=()=>window.print();
 $('#expJson').onclick=()=>baixar(new Blob([JSON.stringify(DB)],{type:'application/json'}),'backup-execucao-paradas.json');
@@ -637,14 +628,13 @@ function refreshAll(){renderStopsList();if(!$('#tabExec').hidden)renderExec()}
 window.__paradasGet=()=>DB;
 window.__paradasSet=data=>{DB=data;renderStopsList();if(!$('#tabExec').hidden)renderExec()};
 renderStopsList();
-// Sem atualização automática por relógio: a curva usa só a data/hora lançada em cada atividade.
 </script>
 
 
 <!-- Firebase: sincronização das paradas em tempo real -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { initializeFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAfeiHITnoS6MGc2zCHkCHN_s3CFM3F1G4",
@@ -655,86 +645,118 @@ const firebaseConfig = {
   appId: "1:547969425495:web:b8bfaae5fc2b048cdec312"
 };
 
+const COL = 'paradas_execucao';
+const LS_KEY = 'execucao_paradas_v1';
+const MAX_DOC_BYTES = 900000; // limite do Firestore é ~1 MB por documento
+
 const statusEl = document.createElement('span');
 statusEl.id = 'firebaseStatus';
-statusEl.style.cssText = 'display:inline-block;margin-left:6px;font-size:11px;color:var(--muted)';
+statusEl.style.cssText = 'display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);cursor:pointer';
+statusEl.title = 'Clique para reenviar os dados agora';
 const subEl = document.querySelector('.sub');
 if (subEl) subEl.appendChild(statusEl);
 const setStatus = (msg, color='var(--muted)') => { statusEl.textContent = ' · Firebase: ' + msg; statusEl.style.color = color; };
 
+function errMsg(err) {
+  const code = (err && err.code) || '';
+  const m = (err && err.message) || '';
+  if (code.includes('permission-denied')) return 'permissão negada — publique as regras do Firestore';
+  if (code.includes('unavailable') || code.includes('deadline')) return 'sem conexão com o servidor (rede bloqueando o Firebase?)';
+  if (code.includes('invalid-argument') || /size|exceed|too large/i.test(m)) return 'dados grandes demais (muitas fotos) — remova fotos';
+  if (code.includes('failed-precondition') || code.includes('not-found')) return 'banco Firestore não criado neste projeto';
+  return 'erro: ' + (code || m || 'desconhecido');
+}
+
 let db, ready = false, applyingRemote = false, writeTimer = null;
 let remoteIds = new Set();
-const col = 'paradas_execucao';
 const localDB = () => window.__paradasGet ? window.__paradasGet() : {stops:[],sel:''};
+
+function applyRemote(cloudStops, label) {
+  applyingRemote = true;
+  try {
+    const local = localDB();
+    const selected = cloudStops.some(s => s.id === local.sel) ? local.sel : (cloudStops[0]?.id || '');
+    const restored = {stops:cloudStops, sel:selected};
+    if (window.__paradasSet) window.__paradasSet(restored);
+    try { localStorage.setItem(LS_KEY, JSON.stringify(restored)); } catch (e) {}
+  } finally { applyingRemote = false; }
+  setStatus(label, '#4ADE80');
+}
 
 try {
   setStatus('conectando...');
   const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  const ref = collection(db, col);
+  // Detecta automaticamente redes (proxy/firewall de empresa) que bloqueiam o canal padrão e usa long polling.
+  db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, ignoreUndefinedProperties: true });
+  const ref = collection(db, COL);
+
+  // Se em 12 s o servidor não responder, avisa em vez de ficar parado.
+  setTimeout(() => {
+    if (!ready) setStatus('sem resposta do servidor — a rede pode estar bloqueando o Firebase', '#FBBF24');
+  }, 12000);
 
   window.__firebaseSave = data => {
     if (!ready || applyingRemote) return;
     clearTimeout(writeTimer);
     writeTimer = setTimeout(async () => {
+      const slow = setTimeout(() => setStatus('enviando... sem resposta do servidor (rede/regras?)', '#FBBF24'), 10000);
       try {
-        const current = new Set((data.stops || []).map(s => String(s.id)));
+        setStatus('enviando...', '#FBBF24');
+        const stops = data.stops || [];
+        const current = new Set(stops.map(s => String(s.id)));
         const jobs = [];
-        for (const stop of (data.stops || [])) {
-          // Cada parada é um documento para evitar limite de tamanho de um único documento.
-          jobs.push(setDoc(doc(db, col, String(stop.id)), {...stop, _syncAt: serverTimestamp()}, {merge:true}));
+        const tooBig = [];
+        for (const stop of stops) {
+          // Cada parada é um documento próprio.
+          const payload = {...stop, _syncAt: serverTimestamp()};
+          if (JSON.stringify(stop).length > MAX_DOC_BYTES) { tooBig.push(stop.name || stop.id); continue; }
+          jobs.push(setDoc(doc(db, COL, String(stop.id)), payload));
         }
-        for (const id of remoteIds) if (!current.has(id)) jobs.push(deleteDoc(doc(db, col, id)));
+        for (const id of remoteIds) if (!current.has(id)) jobs.push(deleteDoc(doc(db, COL, id)));
         await Promise.all(jobs);
+        clearTimeout(slow);
         remoteIds = current;
-        setStatus('conectado · sincronizado', '#4ADE80');
+        if (tooBig.length) setStatus('parada(s) grande(s) demais para sincronizar: ' + tooBig.join(', ') + ' — remova fotos', '#F87171');
+        else setStatus('conectado · sincronizado', '#4ADE80');
       } catch (err) {
+        clearTimeout(slow);
         console.error('Firebase write error:', err);
-        setStatus('erro ao salvar — confira as regras do Firestore', '#F87171');
+        setStatus(errMsg(err), '#F87171');
       }
     }, 500);
   };
 
+  statusEl.onclick = () => { if (ready) window.__firebaseSave(localDB()); };
+
   onSnapshot(ref, snapshot => {
     // Não substitui os dados locais enquanto uma gravação deste navegador ainda está pendente.
     if (snapshot.metadata.hasPendingWrites) return;
-    const cloudStops = snapshot.docs.map(d => ({...d.data(), id:d.id}));
+    // Primeiro retorno vazio vindo só do cache: espera o servidor responder de verdade.
+    if (!ready && snapshot.metadata.fromCache && snapshot.empty) { setStatus('aguardando o servidor...'); return; }
+
+    const cloudStops = snapshot.docs.map(d => { const {_syncAt, ...rest} = d.data(); return {...rest, id:d.id}; });
     remoteIds = new Set(snapshot.docs.map(d => d.id));
+
     if (!ready) {
       ready = true;
       if (cloudStops.length) {
-        applyingRemote = true;
-        const local = localDB();
-        const selected = cloudStops.some(s => s.id === local.sel) ? local.sel : (cloudStops[0]?.id || '');
-        const restored = {stops:cloudStops, sel:selected};
-        if (window.__paradasSet) window.__paradasSet(restored);
-        localStorage.setItem('execucao_paradas_v1', JSON.stringify(restored));
-        applyingRemote = false;
-        setStatus('conectado · dados da nuvem carregados', '#4ADE80');
+        applyRemote(cloudStops, 'conectado · dados da nuvem carregados');
       } else {
         setStatus('conectado · enviando dados locais', '#4ADE80');
-        const local = localDB();
-        window.__firebaseSave(local);
+        window.__firebaseSave(localDB());
       }
       return;
     }
-    // Atualizações remotas em tempo real, preservando o identificador selecionado se possível.
-    applyingRemote = true;
-    const local = localDB();
-    const selected = cloudStops.some(s => s.id === local.sel) ? local.sel : (cloudStops[0]?.id || '');
-    const restored = {stops:cloudStops, sel:selected};
-    if (window.__paradasSet) window.__paradasSet(restored);
-    localStorage.setItem('execucao_paradas_v1', JSON.stringify(restored));
-    applyingRemote = false;
-    setStatus('conectado · tempo real', '#4ADE80');
+    // Atualizações remotas em tempo real.
+    applyRemote(cloudStops, 'conectado · tempo real');
   }, err => {
     console.error('Firebase listener error:', err);
     ready = false;
-    setStatus('falha de conexão/permissão no Firestore', '#F87171');
+    setStatus(errMsg(err), '#F87171');
   });
 } catch (err) {
   console.error('Firebase initialization error:', err);
-  setStatus('não inicializado', '#F87171');
+  setStatus('não inicializado: ' + (err.message || err), '#F87171');
 }
 </script>
 
