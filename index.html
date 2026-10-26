@@ -83,6 +83,7 @@ svg{width:100%;height:auto;overflow:visible;display:block}
 .fotoPrev img{max-width:90px;max-height:70px;border-radius:6px;border:1px solid var(--border);object-fit:cover}
 .fotoRemove{font-size:10.5px;color:var(--muted);cursor:pointer}
 .quick{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}\n.timeRow{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0}.timeRow label{flex:1;min-width:145px}.timeRow input{margin-top:6px;min-height:42px;font-size:14px;border-radius:9px}.timeFields{display:grid;grid-template-columns:minmax(150px,1.35fr) minmax(110px,.8fr);gap:8px;flex:1;min-width:260px;padding:10px;background:color-mix(in srgb,var(--accent) 7%,var(--card));border:1px solid var(--border);border-radius:11px}.timeFields label{font-size:11px;font-weight:700;color:var(--fg)}.timeFields input{width:100%;background:var(--card);font-weight:600}.timeTitle{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--brand)}.timeHint{font-size:11px;color:var(--muted);margin-top:4px}.timeAction{min-height:42px;font-weight:700!important}
+.dtRow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}.dtRow input{margin:0;width:auto;font-size:11.5px;padding:5px 8px}.dtLab{font-size:11px;font-weight:700;color:var(--brand)}.dtWarn{font-size:10.5px}
 @media(max-width:700px){.formgrid,.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.pctbox{min-width:100%}}
 @media print{header,nav.tabs,.noprint,.obsRow .fotoBtn,.quick{display:none!important}.row,.panel,.chartbox{break-inside:avoid}#tabProg{display:none!important}#tabExec{display:block!important}}
 </style>
@@ -165,7 +166,23 @@ function fromLocalInput(v){const n=v?new Date(v).getTime():NaN;return Number.isF
 function datePart(ms){const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
 function timePart(ms){const d=new Date(ms);return `${pad(d.getHours())}:${pad(d.getMinutes())}`}
 function fromParts(date,time){return date&&time?fromLocalInput(`${date}T${time}`):null}
-function referenceTime(s){return Number.isFinite(+s.referenceAt)?+s.referenceAt:stopStart(s)}
+const DT_MIN=Date.UTC(2000,0,1),DT_MAX=Date.UTC(2100,0,1);
+function validDt(v){return v!=null&&v!==''&&Number.isFinite(+v)&&+v>=DT_MIN&&+v<=DT_MAX}
+function taskDts(s){return (s.tasks||[]).filter(t=>validDt(t.dt))}
+function referenceTime(s){const d=taskDts(s).map(t=>+t.dt);return d.length?Math.max(...d):stopStart(s)}
+function curvePoints(s){
+  // Curva S real: em cada data/hora lançada numa atividade, soma o % de todas as
+  // atividades já lançadas até aquele momento e divide pelo total de atividades.
+  const all=s.tasks||[],n=all.length||1,dated=taskDts(s).slice().sort((a,b)=>+a.dt-+b.dt);
+  const pts=[];let acc=0;
+  for(let i=0;i<dated.length;i++){
+    acc+=clamp(+dated[i].pct||0,0,100);
+    const t=+dated[i].dt;
+    const q={t,pct:acc/n};
+    if(pts.length&&pts[pts.length-1].t===t)pts[pts.length-1]=q;else pts.push(q);
+  }
+  return pts;
+}
 function fmtDate(k){const m=String(k||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}/${m[1]}`:''}
 function smoothstep(t){return t*t*(3-2*t)}
 function clamp(v,a,b){return Math.min(b,Math.max(a,v))}
@@ -213,8 +230,8 @@ function drawChart(s){
   const svg=$('#chart');if(!svg)return;
   const W=640,H=260,L=42,R=18,T=14,B=38;
   const st=stopStart(s),en=stopEnd(s),reference=referenceTime(s);
-  // Apenas os pontos confirmados pelo botão manual entram na Curva S.
-  const hist=(s.hist||[]).filter(p=>p.manual===true&&Number.isFinite(+p.t)&&Number.isFinite(+p.pct)).slice().sort((a,b)=>a.t-b.t);
+  // A Curva S real nasce da data/hora lançada em cada atividade.
+  const hist=curvePoints(s);
   // O eixo termina no fim programado ou no horário de referência escolhido, nunca no relógio do computador.
   const axisStart=Math.min(st,...hist.map(p=>p.t));
   const axisEnd=Math.max(en,reference,...hist.map(p=>p.t));
@@ -226,7 +243,7 @@ function drawChart(s){
   const hrs=span/36e5,steps=[0.5,1,2,3,4,6,12,24,48,72,168];
   const step=steps.find(x=>hrs/x<=8)||168;
   const tickStart=Math.ceil(axisStart/(step*36e5))*(step*36e5);
-  for(let t=tickStart;t<=axisEnd;t+=step*36e5){
+  for(let t=tickStart,nt=0;t<=axisEnd&&nt<40;t+=step*36e5,nt++){
     const d=new Date(t),x=X(t);
     const lab=hrs<=30?`${pad(d.getHours())}:${pad(d.getMinutes())}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}h`;
     g+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${H-B}" stroke="var(--border)" stroke-dasharray="2,4"/><text x="${x}" y="${H-B+16}" font-size="11" text-anchor="middle" fill="var(--muted)">${lab}</text>`;
@@ -237,8 +254,7 @@ function drawChart(s){
     const t=axisStart+i/80*span;
     pp+=(i?'L':'M')+X(t).toFixed(1)+','+Y(plannedAt(s,t)).toFixed(1)+' ';
   }
-  // Realizado: somente snapshots manuais confirmados pelo líder.
-  // A edição de percentuais não altera a curva até a próxima atualização.
+  // Realizado: acumulado das atividades com data/hora lançada.
   const points=[{t:st,pct:0},...hist.map(p=>({t:+p.t,pct:clamp(+p.pct||0,0,100)}))];
   const clean=[];
   for(const p of points){
@@ -258,7 +274,7 @@ function drawChart(s){
     }
   }
   const lastP=clean[clean.length-1]||{x:X(st),y:Y(0)};
-  const referenceLine=`<line x1="${X(reference)}" y1="${T}" x2="${X(reference)}" y2="${H-B}" stroke="var(--dsm-purple)" stroke-dasharray="3,3"/><text x="${X(reference)}" y="${T+10}" font-size="10" text-anchor="middle" fill="var(--dsm-purple)">referência</text>`;
+  const referenceLine=`<line x1="${X(reference)}" y1="${T}" x2="${X(reference)}" y2="${H-B}" stroke="var(--dsm-purple)" stroke-dasharray="3,3"/><text x="${X(reference)}" y="${T+10}" font-size="10" text-anchor="middle" fill="var(--dsm-purple)">último lançamento</text>`;
   svg.innerHTML=g+referenceLine+
     `<path d="${pp}" fill="none" stroke="var(--planned)" stroke-width="2.2" stroke-dasharray="5,4"/>`+
     `<path d="${rp}" fill="none" stroke="var(--actual)" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>`+
@@ -291,8 +307,17 @@ function cardsHtml(s){
   <div class="card" style="border-top-color:${status.cor}"><b style="font-size:16px;color:${status.cor};display:flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${status.fundo};color:${status.cor};font-size:14px">${status.icone}</span>${status.label}</b><span>Status da parada · ${status.detalhe}</span></div>`;
 }
 
+function dtInfoText(s){
+  const tk=s.tasks||[],com=taskDts(s).length;
+  const semDt=tk.filter(t=>(+t.pct||0)>0&&!validDt(t.dt)).length;
+  let m=`${com} de ${tk.length} atividades com data/hora lançada.`;
+  if(semDt)m+=` ⚠ ${semDt} com % mas sem data/hora (fora da curva).`;
+  const r=referenceTime(s);m+=com?` Último lançamento: ${new Date(r).toLocaleString('pt-BR')}.`:' Nenhum lançamento ainda — usando o início da parada como referência.';
+  return m;
+}
 function updateLive(){
   const s=cur();if(!s)return;
+  const di=$('#dtInfo');if(di)di.innerHTML=dtInfoText(s);
   const c=$('#liveCards');if(c)c.innerHTML=cardsHtml(s);
   const pb=$('#liveBar');if(pb)pb.style.width=overall(s).toFixed(1)+'%';
   drawChart(s);
@@ -310,6 +335,7 @@ function filtradas(s){
     return true;
   });
 }
+function hasDt(t){return validDt(t.dt)}
 function rowHtml(t){
   return `<div class="row ${t.pct>=100?'done':''}" data-id="${esc(t.id)}">
     <div class="rowtop">
@@ -328,6 +354,13 @@ function rowHtml(t){
       <input type="text" data-obs="${esc(t.id)}" placeholder="Observações..." value="${esc(t.obs)}">
       <input type="text" data-acao="${esc(t.id)}" placeholder="Ação / encaminhamento..." value="${esc(t.acao)}">
       <label class="fotoBtn">📷<input type="file" accept="image/*" capture="environment" data-foto="${esc(t.id)}" hidden></label>
+    </div>
+    <div class="dtRow">
+      <span class="dtLab">🕒 Lançamento</span>
+      <input type="date" min="2000-01-01" max="2099-12-31" data-dtd="${esc(t.id)}" value="${hasDt(t)?datePart(+t.dt):''}" aria-label="Data do lançamento">
+      <input type="time" data-dtt="${esc(t.id)}" value="${hasDt(t)?timePart(+t.dt):''}" aria-label="Hora do lançamento">
+      <button class="quick" data-now="${esc(t.id)}" title="Usar data e hora atuais">Agora</button>
+      ${hasDt(t)?'':'<span class="dtWarn muted">sem data/hora — não entra na curva</span>'}
     </div>
     ${t.foto?`<div class="fotoPrev"><img src="${t.foto}" alt="foto"><span class="fotoRemove" data-rmfoto="${esc(t.id)}">✕ remover foto</span></div>`:''}
   </div>`;
@@ -350,21 +383,14 @@ function renderExec(){
       <span class="muted"> · ${fmtDate(s.date)} ${esc(s.start||'07:00')} → ${pad(fim.getDate())}/${pad(fim.getMonth()+1)} ${pad(fim.getHours())}:${pad(fim.getMinutes())} (${+s.hours||8} h)</span>
       <div class="progress"><i id="liveBar" style="width:${overall(s).toFixed(1)}%"></i></div></div>
     <div class="panel noprint">
-      <h2>Atualização do acompanhamento</h2>
-      <div class="muted">Escolha a data e o horário nos campos separados abaixo.</div>
-      <div class="timeRow">
-        <div class="timeFields">
-          <label>📅 Data de referência<input id="referenceDate" type="date" value="${datePart(Number.isFinite(+s.referenceAt)?+s.referenceAt:stopStart(s))}"></label>
-          <label>◷ Horário de referência<input id="referenceTimeInput" type="time" value="${timePart(Number.isFinite(+s.referenceAt)?+s.referenceAt:stopStart(s))}"></label>
-        </div>
-        <button class="primary timeAction" id="updateReference">✓ Atualizar acompanhamento</button>
-      </div>
-      <div class="muted" id="referenceInfo">Última referência: ${s.referenceAt?new Date(+s.referenceAt).toLocaleString('pt-BR'):'ainda não atualizada — usando o início da parada'}.</div>
+      <h2>Como a Curva S é desenhada</h2>
+      <div class="muted">Em cada atividade, informe o % executado e a <b>data e hora</b> do lançamento. A curva real é montada com essas datas — atividade sem data/hora não entra na curva.</div>
+      <div class="muted" id="dtInfo" style="margin-top:6px">${dtInfoText(s)}</div>
     </div>
     <div class="cards" id="liveCards">${cardsHtml(s)}</div>
     <div class="chartbox"><h3>Curva S da parada</h3>
       <svg id="chart" viewBox="0 0 640 260" role="img" aria-label="Curva S planejado x real"></svg>
-      <div class="legend"><span><i style="background:var(--planned)"></i>Planejado</span><span><i style="background:var(--actual)"></i>Real (por atualização manual)</span><span><i style="background:var(--dsm-purple)"></i>Referência</span></div></div>
+      <div class="legend"><span><i style="background:var(--planned)"></i>Planejado</span><span><i style="background:var(--actual)"></i>Real (data/hora das atividades)</span><span><i style="background:var(--dsm-purple)"></i>Último lançamento</span></div></div>
     <div class="count muted" id="count" style="margin:8px 0"></div>
     <div id="list"></div>`;
   drawChart(s);renderList();
@@ -385,6 +411,10 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('click',e=>{
   const s=cur();if(!s)return;const t=e.target;
+  if(t.matches('[data-now]')){
+    const a=s.tasks.find(x=>x.id===t.dataset.now);if(!a)return;
+    const n=new Date();n.setSeconds(0,0);a.dt=n.getTime();save();renderList();updateLive();return;
+  }
   if(t.matches('[data-full]')){
     const a=s.tasks.find(x=>x.id===t.dataset.full);if(!a)return;
     a.pct=100;save();renderList();updateLive();
@@ -392,8 +422,25 @@ document.addEventListener('click',e=>{
     const a=s.tasks.find(x=>x.id===t.dataset.rmfoto);if(a){a.foto=null;save();renderList()}
   }
 });
+function setTaskDt(a,date,time,s){
+  if(!date){a.dt=null}
+  else{
+    const v=fromParts(date,time||s.start||'07:00');
+    if(!validDt(v)){alert('Data inválida. Use o ano completo, ex.: 26/10/2026.');renderList();return}
+    a.dt=v;
+  }
+  save();renderList();updateLive();
+}
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.matches('[data-dtd],[data-dtt]')){
+    const s=cur();if(!s)return;
+    const id=t.dataset.dtd||t.dataset.dtt;
+    const a=s.tasks.find(x=>x.id===id);if(!a)return;
+    const row=t.closest('.row');
+    setTaskDt(a,row.querySelector('[data-dtd]').value,row.querySelector('[data-dtt]').value,s);
+    return;
+  }
   if(t.matches('[data-foto]')&&t.files[0]){processarFoto(t.files[0],t.dataset.foto)}
 });
 function processarFoto(file,id){
@@ -413,20 +460,6 @@ function processarFoto(file,id){
   rd.readAsDataURL(file);
 }
 $('#selStop').onchange=e=>{DB.sel=e.target.value;save();renderExec()};
-document.addEventListener('click',e=>{
-  if(e.target&&e.target.id==='updateReference'){
-    const s=cur();if(!s)return;
-    const v=fromParts($('#referenceDate')?.value,$('#referenceTimeInput')?.value);
-    if(v===null){alert('Informe a data e o horário de referência.');return}
-    s.referenceAt=v;
-    // Registra o estado atual no horário escolhido, sem usar o relógio automaticamente.
-    s.hist=(s.hist||[]).filter(p=>!(p.manual===true&&+p.t===v));
-    s.hist.push({t:v,pct:Math.round(overall(s)*10)/10,taskId:null,taskPct:null,manual:true});
-    s.hist.sort((a,b)=>a.t-b.t);
-    if(s.hist.length>1500)s.hist.splice(0,s.hist.length-1500);
-    save();renderExec();renderStopsList();
-  }
-});
 $('#fStatus').onchange=renderList;
 $('#busca').oninput=renderList;
 
@@ -563,9 +596,8 @@ $('#importBtn').onclick=()=>{
     for(const r of p.found){
       const t=have.get(r.key);
       if(t){Object.assign(t,{ordem:r.ordem,name:r.name,crit:r.crit,local:r.local,team:r.team,ini:r.ini,fim:r.fim});upd++}
-      else{s.tasks.push({id:uid('T'),key:r.key,ordem:r.ordem,name:r.name,crit:r.crit,local:r.local,team:r.team,ini:r.ini,fim:r.fim,pct:0,obs:'',acao:'',foto:null});add++}
+      else{s.tasks.push({id:uid('T'),key:r.key,ordem:r.ordem,name:r.name,crit:r.crit,local:r.local,team:r.team,ini:r.ini,fim:r.fim,pct:0,dt:null,obs:'',acao:'',foto:null});add++}
     }
-    if((s.hist||[]).length)record(s);
   }
   save();PLAN=[];$('#importBtn').disabled=true;
   $('#importMessage').textContent=`Importação concluída: ${add} atividades adicionadas e ${upd} atualizadas (o % já lançado foi mantido).`;
@@ -578,8 +610,8 @@ function csvEsc(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
 function baixar(blob,nome){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 $('#expCsv').onclick=()=>{
   const s=cur();if(!s){alert('Cadastre uma parada primeiro.');return}
-  const rows=[['Parada','Área','Data','Ordem','Criticidade','Atividade','Equipe','Local','% executado','Observações','Ação'],
-    ...(s.tasks||[]).map(t=>[s.name,s.area,fmtDate(s.date),t.ordem,t.crit,t.name,t.team,t.local,t.pct,t.obs,t.acao])];
+  const rows=[['Parada','Área','Data','Ordem','Criticidade','Atividade','Equipe','Local','% executado','Data/hora lançamento','Observações','Ação'],
+    ...(s.tasks||[]).map(t=>[s.name,s.area,fmtDate(s.date),t.ordem,t.crit,t.name,t.team,t.local,t.pct,hasDt(t)?new Date(+t.dt).toLocaleString('pt-BR'):'',t.obs,t.acao])];
   baixar(new Blob(['﻿'+rows.map(r=>r.map(csvEsc).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8;'}),'relatorio-'+norm(s.area).replace(/\W+/g,'-')+'-'+s.date+'.csv');
 };
 $('#printBtn').onclick=()=>window.print();
@@ -605,7 +637,7 @@ function refreshAll(){renderStopsList();if(!$('#tabExec').hidden)renderExec()}
 window.__paradasGet=()=>DB;
 window.__paradasSet=data=>{DB=data;renderStopsList();if(!$('#tabExec').hidden)renderExec()};
 renderStopsList();
-// Sem atualização automática por relógio: a referência só muda pelo botão manual.
+// Sem atualização automática por relógio: a curva usa só a data/hora lançada em cada atividade.
 </script>
 
 
