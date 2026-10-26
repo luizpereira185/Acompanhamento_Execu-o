@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -91,7 +91,7 @@ svg{width:100%;height:auto;overflow:visible;display:block}
 <body>
 <header>
   <div class="brand">
-    <img class="logo" src="logo-dsm.png" alt="DSM" onerror="this.style.display='none';document.getElementById('logoTxt').style.display='block'">
+    <img class="logo" src="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%2740%27 viewBox=%270 0 120 40%27%3E%3Ctext x=%270%27 y=%2730%27 font-family=%27Arial,sans-serif%27 font-size=%2730%27 font-weight=%27800%27 fill=%27%231ea7e1%27%3EDSM%3C/text%3E%3C/svg%3E" alt="DSM">
     <span class="logoTxt" id="logoTxt">DSM</span>
     <div><h1>Execução de Paradas</h1><div class="sub" id="subInfo">Programação semanal · barra de % · Curva S</div></div>
   </div>
@@ -686,13 +686,13 @@ function applyRemote(cloudStops, label) {
 try {
   setStatus('conectando...');
   const app = initializeApp(firebaseConfig);
-  // Detecta automaticamente redes (proxy/firewall de empresa) que bloqueiam o canal padrão e usa long polling.
-  db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, ignoreUndefinedProperties: true });
+  // Compatibilidade com redes corporativas/proxy: força long polling no Firestore.
+  db = initializeFirestore(app, { experimentalForceLongPolling: true, ignoreUndefinedProperties: true });
   const ref = collection(db, COL);
 
   // Se em 12 s o servidor não responder, avisa em vez de ficar parado.
   setTimeout(() => {
-    if (!ready) setStatus('sem resposta do servidor — a rede pode estar bloqueando o Firebase', '#FBBF24');
+    if (!ready) setStatus('sem resposta após 12 s — confira rede, regras Firestore e configuração', '#FBBF24');
   }, 12000);
 
   window.__firebaseSave = data => {
@@ -726,7 +726,14 @@ try {
     }, 500);
   };
 
-  statusEl.onclick = () => { if (ready) window.__firebaseSave(localDB()); };
+  statusEl.onclick = () => {
+    if (ready) {
+      window.__firebaseSave(localDB());
+    } else {
+      setStatus('tentando reconectar…', '#FBBF24');
+      window.location.reload();
+    }
+  };
 
   onSnapshot(ref, snapshot => {
     // Não substitui os dados locais enquanto uma gravação deste navegador ainda está pendente.
