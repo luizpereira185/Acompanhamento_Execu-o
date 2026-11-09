@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -84,8 +84,12 @@ svg{width:100%;height:auto;overflow:visible;display:block}
 .fotoRemove{font-size:10.5px;color:var(--muted);cursor:pointer}
 .quick{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}
 .dtRow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}.dtRow input{margin:0;width:auto;font-size:11.5px;padding:5px 8px}.dtLab{font-size:11px;font-weight:700;color:var(--brand)}.dtWarn{font-size:10.5px}
+.tag.manual{background:color-mix(in srgb,var(--dsm-purple) 15%,var(--card));border-color:var(--dsm-purple);color:var(--dsm-purple);font-weight:700}
+.row.manual{border-left-color:var(--dsm-purple)}.row.manual.done{border-left-color:var(--dsm-green)}
+.delTask{border:1px solid #c0392b;background:transparent;color:#c0392b;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}
+#manualForm{margin-top:10px}
 @media(max-width:700px){.formgrid,.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.pctbox{min-width:100%}}
-@media print{header,nav.tabs,.noprint,.obsRow .fotoBtn,.quick{display:none!important}.row,.panel,.chartbox{break-inside:avoid}#tabProg{display:none!important}#tabExec{display:block!important}}
+@media print{header,nav.tabs,.noprint,.obsRow .fotoBtn,.quick,.delTask{display:none!important}.row,.panel,.chartbox{break-inside:avoid}#tabProg{display:none!important}#tabExec{display:block!important}}
 </style>
 </head>
 <body>
@@ -328,11 +332,11 @@ function filtradas(s){
 }
 function hasDt(t){return validDt(t.dt)}
 function rowHtml(t){
-  return `<div class="row ${t.pct>=100?'done':''}" data-id="${esc(t.id)}">
+  return `<div class="row ${t.pct>=100?'done':''} ${t.manual?'manual':''}" data-id="${esc(t.id)}">
     <div class="rowtop">
       <div class="info">
         <div class="name">${esc(t.name)}</div>
-        <div class="meta">${t.ordem?`<span class="tag">Ordem ${esc(t.ordem)}</span>`:''}${t.crit?`<span class="tag">Crit. ${esc(t.crit)}</span>`:''}${t.team?`<span class="tag">${esc(t.team)}</span>`:''}${t.local?`<span class="tag">${esc(t.local)}</span>`:''}${t.ini?`<span class="tag">${fmtDate(t.ini)}${t.fim&&t.fim!==t.ini?' → '+fmtDate(t.fim):''}</span>`:''}</div>
+        <div class="meta">${t.manual?'<span class="tag manual">Manual</span>':''}${t.ordem?`<span class="tag">Ordem ${esc(t.ordem)}</span>`:''}${t.crit?`<span class="tag">Crit. ${esc(t.crit)}</span>`:''}${t.team?`<span class="tag">${esc(t.team)}</span>`:''}${t.local?`<span class="tag">${esc(t.local)}</span>`:''}${t.ini?`<span class="tag">${fmtDate(t.ini)}${t.fim&&t.fim!==t.ini?' → '+fmtDate(t.fim):''}</span>`:''}</div>
       </div>
       <div class="pctbox">
         <input type="range" min="0" max="100" step="5" value="${t.pct}" data-pct="${esc(t.id)}" aria-label="Percentual executado">
@@ -352,6 +356,7 @@ function rowHtml(t){
       <input type="time" data-dtt="${esc(t.id)}" value="${hasDt(t)?timePart(+t.dt):''}" aria-label="Hora do lançamento">
       <button class="quick" data-now="${esc(t.id)}" title="Usar data e hora atuais">Agora</button>
       ${hasDt(t)?'':'<span class="dtWarn muted">sem data/hora — não entra na curva</span>'}
+      ${t.manual?`<button class="delTask" data-delt="${esc(t.id)}" title="Excluir esta atividade manual" style="margin-left:auto">🗑 Excluir</button>`:''}
     </div>
     ${t.foto?`<div class="fotoPrev"><img src="${t.foto}" alt="foto"><span class="fotoRemove" data-rmfoto="${esc(t.id)}">✕ remover foto</span></div>`:''}
   </div>`;
@@ -382,6 +387,22 @@ function renderExec(){
     <div class="chartbox"><h3>Curva S da parada</h3>
       <svg id="chart" viewBox="0 0 640 260" role="img" aria-label="Curva S planejado x real"></svg>
       <div class="legend"><span><i style="background:var(--planned)"></i>Planejado</span><span><i style="background:var(--actual)"></i>Real (data/hora das atividades)</span><span><i style="background:var(--dsm-purple)"></i>Último lançamento</span></div></div>
+    <div class="panel noprint">
+      <div class="stophead"><h2 style="margin:0">Atividades fora da planilha</h2>
+        <button class="primary" id="toggleManual" type="button">＋ Cadastrar atividade manual</button></div>
+      <div id="manualForm" hidden>
+        <div class="formgrid">
+          <label style="grid-column:span 2">Descrição da atividade *<input id="mDesc" placeholder="Ex.: Troca de rolamento do motor M-101"></label>
+          <label>Ordem (se houver)<input id="mOrdem" placeholder="Ex.: 4001234567"></label>
+          <label>Criticidade<input id="mCrit" placeholder="Ex.: A"></label>
+          <label>Equipe<input id="mTeam" placeholder="Ex.: Mecânica"></label>
+          <label>Local<input id="mLocal" placeholder="Ex.: Fosfato - Moinho 2"></label>
+          <label>Data início<input id="mIni" type="date" value="${esc(s.date)}"></label>
+          <label>Data fim<input id="mFim" type="date" value="${esc(stopEndKey(s))}"></label>
+        </div>
+        <div class="actionsrow"><button class="primary" id="saveManual" type="button">💾 Salvar atividade</button><button class="secondary" id="cancelManual" type="button">Cancelar</button></div>
+      </div>
+    </div>
     <div class="count muted" id="count" style="margin:8px 0"></div>
     <div id="list"></div>`;
   drawChart(s);renderList();
@@ -402,6 +423,28 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('click',e=>{
   const s=cur();if(!s)return;const t=e.target;
+  if(t.id==='toggleManual'){const f=$('#manualForm');f.hidden=!f.hidden;if(!f.hidden)$('#mDesc').focus();return}
+  if(t.id==='cancelManual'){$('#manualForm').hidden=true;return}
+  if(t.id==='saveManual'){
+    const name=$('#mDesc').value.trim();
+    if(!name){alert('Informe a descrição da atividade.');$('#mDesc').focus();return}
+    const ordem=$('#mOrdem').value.trim();
+    const ini=$('#mIni').value||s.date,fim=$('#mFim').value||ini;
+    if(fim<ini){alert('A data fim não pode ser antes da data início.');return}
+    s.tasks=s.tasks||[];
+    if(ordem&&s.tasks.some(x=>x.ordem===ordem)){alert(`A ordem ${ordem} já está nesta parada.`);return}
+    s.tasks.push({id:uid('T'),key:ordem||uid('M'),manual:true,ordem,name,crit:$('#mCrit').value.trim(),local:$('#mLocal').value.trim(),team:$('#mTeam').value.trim(),ini,fim,pct:0,dt:null,obs:'',acao:'',foto:null});
+    save();
+    ['mDesc','mOrdem','mCrit','mTeam','mLocal'].forEach(i=>$('#'+i).value='');
+    $('#fStatus').value='';$('#busca').value='';
+    renderList();updateLive();$('#mDesc').focus();
+    return;
+  }
+  if(t.matches('[data-delt]')){
+    const a=s.tasks.find(x=>x.id===t.dataset.delt);if(!a)return;
+    if(!confirm(`Excluir a atividade manual "${a.name}"?`))return;
+    s.tasks=s.tasks.filter(x=>x.id!==a.id);save();renderList();updateLive();return;
+  }
   if(t.matches('[data-now]')){
     const a=s.tasks.find(x=>x.id===t.dataset.now);if(!a)return;
     const n=new Date();n.setSeconds(0,0);a.dt=n.getTime();save();renderList();updateLive();return;
@@ -601,8 +644,8 @@ function csvEsc(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
 function baixar(blob,nome){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 $('#expCsv').onclick=()=>{
   const s=cur();if(!s){alert('Cadastre uma parada primeiro.');return}
-  const rows=[['Parada','Área','Data','Ordem','Criticidade','Atividade','Equipe','Local','% executado','Data/hora lançamento','Observações','Ação'],
-    ...(s.tasks||[]).map(t=>[s.name,s.area,fmtDate(s.date),t.ordem,t.crit,t.name,t.team,t.local,t.pct,hasDt(t)?new Date(+t.dt).toLocaleString('pt-BR'):'',t.obs,t.acao])];
+  const rows=[['Parada','Área','Data','Origem','Ordem','Criticidade','Atividade','Equipe','Local','% executado','Data/hora lançamento','Observações','Ação'],
+    ...(s.tasks||[]).map(t=>[s.name,s.area,fmtDate(s.date),t.manual?'Manual':'Planilha',t.ordem,t.crit,t.name,t.team,t.local,t.pct,hasDt(t)?new Date(+t.dt).toLocaleString('pt-BR'):'',t.obs,t.acao])];
   baixar(new Blob(['\ufeff'+rows.map(r=>r.map(csvEsc).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8;'}),'relatorio-'+norm(s.area).replace(/\W+/g,'-')+'-'+s.date+'.csv');
 };
 $('#printBtn').onclick=()=>window.print();
