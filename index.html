@@ -144,8 +144,8 @@ svg{width:100%;height:auto;overflow:visible;display:block}
   </div>
   <div id="execBody"></div>
   <div class="actionsrow noprint">
-    <button class="secondary" id="expCsv">Exportar relatório CSV</button>
-    <button class="secondary" id="printBtn">🖨️ Imprimir / salvar PDF</button>
+    <button class="primary" id="expRel">📄 Gerar relatório da parada (PDF)</button>
+    <button class="secondary" id="printBtn">🖨️ Imprimir tela</button>
     <button class="secondary" id="expJson">Backup (JSON)</button>
     <button class="secondary" id="impJsonBtn">Restaurar backup</button>
     <input type="file" id="impJson" accept=".json" hidden>
@@ -227,6 +227,9 @@ function plannedAt(s,t){const st=stopStart(s),en=stopEnd(s);return smoothstep(cl
 /* ===================== curva S ===================== */
 function drawChart(s){
   const svg=$('#chart');if(!svg)return;
+  svg.innerHTML=chartInner(s);
+}
+function chartInner(s){
   const W=640,H=260,L=42,R=18,T=14,B=38;
   const st=stopStart(s),en=stopEnd(s),reference=referenceTime(s);
   const hist=curvePoints(s);
@@ -270,7 +273,7 @@ function drawChart(s){
   }
   const lastP=clean[clean.length-1]||{x:X(st),y:Y(0)};
   const referenceLine=`<line x1="${X(reference)}" y1="${T}" x2="${X(reference)}" y2="${H-B}" stroke="var(--dsm-purple)" stroke-dasharray="3,3"/><text x="${X(reference)}" y="${T+10}" font-size="10" text-anchor="middle" fill="var(--dsm-purple)">último lançamento</text>`;
-  svg.innerHTML=g+referenceLine+
+  return g+referenceLine+
     `<path d="${pp}" fill="none" stroke="var(--planned)" stroke-width="2.2" stroke-dasharray="5,4"/>`+
     `<path d="${rp}" fill="none" stroke="var(--actual)" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>`+
     `<circle cx="${lastP.x}" cy="${lastP.y}" r="4.5" fill="var(--actual)"/>`;
@@ -642,12 +645,116 @@ $('#importBtn').onclick=()=>{
 /* ===================== exportar / backup / imprimir ===================== */
 function csvEsc(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
 function baixar(blob,nome){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
-$('#expCsv').onclick=()=>{
-  const s=cur();if(!s){alert('Cadastre uma parada primeiro.');return}
-  const rows=[['Parada','Área','Data','Origem','Ordem','Criticidade','Atividade','Equipe','Local','% executado','Data/hora lançamento','Observações','Ação'],
-    ...(s.tasks||[]).map(t=>[s.name,s.area,fmtDate(s.date),t.manual?'Manual':'Planilha',t.ordem,t.crit,t.name,t.team,t.local,t.pct,hasDt(t)?new Date(+t.dt).toLocaleString('pt-BR'):'',t.obs,t.acao])];
-  baixar(new Blob(['\ufeff'+rows.map(r=>r.map(csvEsc).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8;'}),'relatorio-'+norm(s.area).replace(/\W+/g,'-')+'-'+s.date+'.csv');
-};
+/* ===================== relatório PDF da parada selecionada ===================== */
+function statusAtv(p){p=+p||0;return p>=100?{txt:'CONCLUÍDA',cor:'#5bb947'}:p>0?{txt:'EM EXECUÇÃO',cor:'#f5a01a'}:{txt:'NÃO INICIADA',cor:'#6b7280'}}
+function gerarRelatorio(){
+  const s=cur();if(!s){alert('Cadastre e selecione uma parada primeiro.');return}
+  const tasks=filtradas(s);
+  if(!tasks.length){alert('Nenhuma atividade para o filtro atual.');return}
+  const fStatusTxt=($('#fStatus').selectedOptions[0]||{}).textContent||'Todas as atividades';
+  const busca=$('#busca').value.trim();
+  const fim=new Date(stopEnd(s));
+  const fimTxt=`${pad(fim.getDate())}/${pad(fim.getMonth()+1)}/${fim.getFullYear()} ${pad(fim.getHours())}:${pad(fim.getMinutes())}`;
+  const periodo=`${fmtDate(s.date)} ${esc(s.start||'07:00')} a ${fimTxt}`;
+  const titulo=esc(s.name).toUpperCase();
+  const gerado=new Date().toLocaleString('pt-BR');
+  const prog=tasks.reduce((a,t)=>a+(+t.pct||0),0)/tasks.length;
+  const ok=tasks.filter(t=>(+t.pct||0)>=100).length;
+  const comObs=tasks.filter(t=>(t.obs||'').trim()||(t.acao||'').trim()).length;
+  const comImg=tasks.filter(t=>t.foto).length;
+  const st=statusPrazo(s),plan=plannedAt(s,referenceTime(s));
+  const stCor=String(st.cor).startsWith('var')?'#6b7280':st.cor;
+  const total=2+tasks.length;
+  const foot=n=>`<div class="foot"><span>Documento de acompanhamento - Atividades da parada - ${esc(s.name)} · ${esc(s.area)}</span><span>Página ${n} de ${total}</span></div>`;
+
+  // Página 1 — capa
+  let html=`<section class="page">
+    <h1>RELATÓRIO DE ACOMPANHAMENTO</h1>
+    <h2>${titulo}</h2>
+    <div class="small">Área: <b>${esc(s.area)}</b> · Período: ${periodo} (${+s.hours||8} h)</div>
+    <div class="small">Atividades incluídas no relatório: ${tasks.length}${tasks.length!==(s.tasks||[]).length?` (de ${(s.tasks||[]).length} cadastradas)`:''}</div>
+    ${s.notes?`<div class="small">Observações da parada: ${esc(s.notes)}</div>`:''}
+    <div class="box"><div class="boxh">CRITÉRIOS UTILIZADOS</div><ul>
+      <li>Filtro de status: ${esc(fStatusTxt)}</li>
+      <li>Pesquisa: ${busca?esc(busca):'Sem pesquisa'}</li>
+      <li>Progresso geral do conjunto selecionado: ${prog.toFixed(1)}%</li>
+      <li>Planejado até o último lançamento: ${plan.toFixed(1)}% · Status da parada: <span style="color:${stCor}">${st.label}</span></li>
+      <li>Atividades concluídas: ${ok}/${tasks.length}</li>
+      <li>Atividades com observação: ${comObs}</li>
+      <li>Atividades com imagem: ${comImg}</li></ul></div>
+    <div class="box"><div class="boxh">OBSERVAÇÃO</div><p>As páginas seguintes apresentam a Curva S da parada e uma ficha individual para cada atividade, com as informações cadastradas, observações e imagens anexadas.</p></div>
+    ${foot(1)}</section>`;
+
+  // Página 2 — Curva S
+  html+=`<section class="page">
+    <h1>CURVA S DA PARADA</h1>
+    <div class="small">${esc(s.name)} · ${esc(s.area)} · ${periodo}</div>
+    <div class="chart"><h3>Curva S - Planejado x Real</h3>
+      <svg viewBox="0 0 640 260">${chartInner(s)}</svg>
+      <div class="legend"><span><i style="background:#94a3b8"></i>Planejado</span><span><i style="background:#f5a01a"></i>Real</span><span><i style="background:#8a3f97"></i>Último lançamento</span></div></div>
+    <div class="small">${esc(dtInfoText(s))}</div>
+    ${foot(2)}</section>`;
+
+  // Uma ficha por atividade
+  tasks.forEach((t,i)=>{
+    const p=+t.pct||0,sa=statusAtv(p);
+    const data=t.ini?fmtDate(t.ini)+(t.fim&&t.fim!==t.ini?' a '+fmtDate(t.fim):''):fmtDate(s.date);
+    const lanc=hasDt(t)?new Date(+t.dt).toLocaleString('pt-BR'):'Sem lançamento';
+    const obs=[(t.obs||'').trim()?`<p><b>Observações:</b> ${esc(t.obs)}</p>`:'',(t.acao||'').trim()?`<p><b>Ação / encaminhamento:</b> ${esc(t.acao)}</p>`:''].join('')||'<p class="muted">Nenhuma observação registrada.</p>';
+    html+=`<section class="page">
+      <div class="top"><div><b>${titulo}</b><div class="small">${periodo}</div></div>
+        <div style="text-align:right"><b>${t.ordem?'ORDEM '+esc(t.ordem):'ATIVIDADE '+(i+1)}</b><div class="small">Gerado em ${gerado}</div></div></div>
+      <table><thead><tr><th style="width:44%">ATIVIDADE</th><th>ÁREA</th><th>EQUIPE</th><th>DATA</th><th>PROGRESSO</th></tr></thead>
+        <tbody><tr><td>${esc(t.name)}</td><td>${esc(s.area)}</td><td>${esc(t.team||'—')}</td><td>${data}</td><td><b>${p}%</b></td></tr></tbody></table>
+      <div class="pbar"><i style="width:${p}%;background:${sa.cor}"></i></div><div class="small c">${p}% concluído</div>
+      <div class="two">
+        <div class="col"><div class="boxh">REGISTRO FOTOGRÁFICO</div><div class="foto">${t.foto?`<img src="${t.foto}">`:'<span class="muted">Nenhuma imagem anexada a esta atividade.</span>'}</div></div>
+        <div class="col"><div class="boxh">OBSERVAÇÕES / REGISTRO DA ATIVIDADE</div><div class="obs">${obs}</div></div>
+      </div>
+      <div class="boxh" style="margin-top:10px">INFORMAÇÕES DA ATIVIDADE</div>
+      <div class="info">
+        <div><b>Ordem:</b> ${esc(t.ordem||'—')}</div><div><b>Origem:</b> ${t.manual?'Manual':'Planilha'}</div>
+        <div><b>Criticidade:</b> ${esc(t.crit||'—')}</div><div><b>Local:</b> ${esc(t.local||'—')}</div>
+        <div><b>Data programada:</b> ${data}</div><div><b>Percentual executado:</b> ${p}%</div>
+        <div><b>Último lançamento:</b> ${lanc}</div><div><b>Equipe:</b> ${esc(t.team||'—')}</div>
+      </div>
+      <div class="status"><b style="color:${sa.cor}">${sa.txt}</b> | Parada: ${esc(s.name)} | Área: ${esc(s.area)}${t.team?' | Equipe: '+esc(t.team):''}</div>
+      ${foot(3+i)}</section>`;
+  });
+
+  const css=`@page{size:A4 landscape;margin:0}
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#1a1d23;background:#888}
+  :root{--border:#e5e7eb;--muted:#6b7280;--planned:#94a3b8;--actual:#f5a01a;--dsm-purple:#8a3f97}
+  .page{width:297mm;height:210mm;padding:14mm 16mm 20mm;position:relative;overflow:hidden;background:#fff;margin:6mm auto;page-break-after:always;break-after:page}
+  .page::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#1ea7e1 0 25%,#1c3f94 25% 50%,#f5a01a 50% 75%,#5bb947 75% 100%)}
+  h1{font-size:22px;margin:0 0 6px;color:#1c3f94}h2{font-size:17px;margin:0 0 8px}h3{margin:0 0 6px;font-size:14px}
+  .small{font-size:10.5px;color:#4b5563;margin:2px 0}.muted{color:#6b7280;font-size:11px}.c{text-align:center}
+  .box{margin-top:14px}.boxh{background:#eef1f6;border:1px solid #cfd6e2;font-size:9.5px;font-weight:700;padding:4px 8px;color:#1c3f94}
+  .box ul{margin:8px 0;padding-left:18px;font-size:12px;line-height:1.9;font-weight:600}.box p{font-size:11px;margin:6px 8px}
+  .chart{border:1px solid #e5e7eb;border-radius:6px;padding:10px 16px;margin:10px 0}.chart svg{width:100%;height:118mm;display:block;overflow:visible}
+  .legend{display:flex;gap:16px;font-size:11px;color:#6b7280}.legend i{display:inline-block;width:16px;height:3px;margin-right:4px;vertical-align:middle}
+  .top{display:flex;justify-content:space-between;border-bottom:2px solid #1c3f94;padding-bottom:6px;margin-bottom:10px;color:#1c3f94}
+  table{width:100%;border-collapse:collapse;font-size:11px}th{background:#1c3f94;color:#fff;text-align:left;padding:5px 7px;font-size:9.5px}td{padding:6px 7px;border-bottom:1px solid #e5e7eb}
+  .pbar{height:9px;background:#eef1f6;border-radius:6px;overflow:hidden;margin:8px 0 2px}.pbar i{display:block;height:100%}
+  .two{display:flex;gap:12px;margin-top:8px}.col{flex:1;display:flex;flex-direction:column}
+  .foto{border:1px solid #e5e7eb;height:62mm;display:flex;align-items:center;justify-content:center;overflow:hidden}.foto img{max-width:100%;max-height:100%;object-fit:contain}
+  .obs{border:1px solid #e5e7eb;height:62mm;padding:6px 8px;font-size:11px;overflow:hidden;white-space:pre-wrap}.obs p{margin:0 0 6px}
+  .info{display:grid;grid-template-columns:1fr 1fr;gap:3px 20px;font-size:10.5px;padding:6px 8px;border:1px solid #e5e7eb;border-top:none}
+  .status{margin-top:6px;font-size:10.5px;background:#f6f7f9;padding:5px 8px;border-left:4px solid #1c3f94}
+  .foot{position:absolute;left:16mm;right:16mm;bottom:9mm;display:flex;justify-content:space-between;font-size:8.5px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:3px}
+  .tb{position:sticky;top:0;background:#1c3f94;color:#fff;padding:8px 14px;display:flex;gap:10px;align-items:center;justify-content:center;font-size:13px;z-index:9}
+  .tb button{background:#f5a01a;border:none;color:#fff;padding:7px 14px;border-radius:6px;font-weight:700;cursor:pointer}
+  @media print{body{background:#fff}.page{margin:0}.tb{display:none}}`;
+  const nomeArq='relatorio-'+norm(s.name).replace(/\W+/g,'-')+'-'+s.date;
+  const docHtml=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${nomeArq}</title><style>${css}</style></head><body>
+    <div class="tb">Relatório: ${esc(s.name)} — ${total} páginas <button onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button></div>${html}
+    <script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>`;
+  const w=window.open('','_blank');
+  if(!w){baixar(new Blob([docHtml],{type:'text/html'}),nomeArq+'.html');alert('Pop-up bloqueado: o relatório foi baixado como arquivo. Abra-o e use Ctrl+P → Salvar como PDF.');return}
+  w.document.open();w.document.write(docHtml);w.document.close();
+}
+$('#expRel').onclick=gerarRelatorio;
 $('#printBtn').onclick=()=>window.print();
 $('#expJson').onclick=()=>baixar(new Blob([JSON.stringify(DB)],{type:'application/json'}),'backup-execucao-paradas.json');
 $('#impJsonBtn').onclick=()=>$('#impJson').click();
