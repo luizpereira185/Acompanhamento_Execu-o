@@ -3,32 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Execução de Paradas</title>
+<title>Inventário 2026 · Acompanhamento de Atividades</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#f2f4f7; --fg:#1a1d23; --card:#ffffff; --muted:#6b7280; --border:#e2e5ea;
   --accent:#1c3f94; --brand:#1c3f94; --planned:#94a3b8; --actual:#f5a01a;
-  --dsm-cyan:#1ea7e1; --dsm-blue:#1c3f94; --dsm-orange:#f5a01a; --dsm-green:#5bb947; --dsm-purple:#8a3f97;
+  --dsm-cyan:#1ea7e1; --dsm-blue:#1c3f94; --dsm-orange:#f5a01a; --dsm-green:#5bb947; --dsm-purple:#8a3f97; --red:#d64545;
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){--bg:#14161a;--fg:#e8eaed;--card:#1d2026;--muted:#9aa0a8;--border:#2b2f37;--planned:#556070;--accent:#1ea7e1;--brand:#5bc0f0;}
+  :root{--bg:#14161a;--fg:#e8eaed;--card:#1d2026;--muted:#9aa0a8;--border:#2b2f37;--planned:#6b7a8d;--accent:#2b6fd6;--brand:#5bc0f0;--red:#f87171}
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:14px}
-header{padding:14px 16px 14px;position:sticky;top:0;padding-top:calc(14px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--border);z-index:5}
+header{padding:12px 16px;position:sticky;top:0;padding-top:calc(12px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--border);z-index:5}
 header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:4px;background:linear-gradient(90deg,var(--dsm-cyan) 0 25%,var(--dsm-blue) 25% 50%,var(--dsm-orange) 50% 75%,var(--dsm-green) 75% 100%)}
-.brand{display:flex;align-items:center;gap:12px;max-width:1000px;margin:0 auto}
-.brand .logo{height:38px;width:auto;display:block}
-.brand .logoTxt{display:none;font-weight:800;font-size:26px;letter-spacing:1px;color:var(--brand)}
+.brand{display:flex;align-items:center;gap:14px;max-width:1100px;margin:0 auto}
+.logo{display:flex;flex-direction:column;line-height:1;padding-right:14px;border-right:1px solid var(--border)}
+.logo b{font-size:28px;font-weight:900;letter-spacing:1px;color:var(--brand)}
+.logo small{font-size:8.5px;color:var(--muted);margin-top:3px;white-space:nowrap}
 h1{font-size:17px;margin:0 0 2px;color:var(--brand)}
 .sub{color:var(--muted);font-size:12px}
-.wrap{max-width:1000px;margin:0 auto;padding:0 12px 30px}
-nav.tabs{display:flex;gap:8px;max-width:1000px;margin:10px auto 0;padding:0 12px}
-nav.tabs button{border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:9px;padding:9px 13px;font-weight:600;cursor:pointer;font:inherit;font-weight:600}
+.wrap{max-width:1100px;margin:0 auto;padding:0 12px 30px}
+nav.tabs{display:flex;gap:8px;max-width:1100px;margin:10px auto 0;padding:0 12px;flex-wrap:wrap}
+nav.tabs button{border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:9px;padding:9px 13px;cursor:pointer;font:inherit;font-weight:600}
 nav.tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
-h2{font-size:16px;margin:0 0 8px;color:var(--brand)}
+h2{font-size:15px;margin:0 0 8px;color:var(--brand)}
 .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin:10px 0}
 .formgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 label{font-size:11px;color:var(--muted);display:block}
@@ -36,167 +37,218 @@ input,select,textarea{width:100%;min-width:0;margin-top:4px;background:var(--bg)
 button.primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:12px;cursor:pointer;white-space:nowrap}
 button.primary:disabled{opacity:.5;cursor:default}
 button.secondary{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px}
-button.danger{border:1px solid #c0392b;background:transparent;color:#c0392b;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px}
 .actionsrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
 .muted{color:var(--muted);font-size:12px}
 .drop{border:1px dashed var(--accent);border-radius:10px;padding:16px;text-align:center;background:color-mix(in srgb,var(--accent) 5%,var(--card))}
 .drop input{max-width:100%;margin:10px auto 0;width:auto}
 .tablewrap{overflow:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
-th{color:var(--muted);font-weight:600}
-.pill{display:inline-block;padding:3px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border);font-size:11px;font-weight:600}
-.stopitem{border:1px solid var(--border);border-left:5px solid var(--dsm-cyan);border-radius:10px;padding:12px;margin:8px 0;background:var(--card)}
-.stophead{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical-align:middle}
+th{color:var(--muted);font-weight:600;font-size:11px}
+tr.click{cursor:pointer}tr.click:hover td{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+tr.sel td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border);font-size:11px;font-weight:600;white-space:nowrap}
 .progress{height:8px;background:var(--bg);border-radius:8px;overflow:hidden;margin:8px 0}
 .progress i{display:block;height:100%;background:var(--dsm-green);transition:width .2s}
-.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0}
-.card{background:var(--card);border:1px solid var(--border);border-top:3px solid var(--dsm-cyan);border-radius:10px;padding:10px 14px}
-.card:nth-child(2){border-top-color:var(--dsm-orange)}.card:nth-child(3){border-top-color:var(--dsm-green)}.card:nth-child(4){border-top-color:var(--dsm-purple)}
-.card b{display:block;font-size:22px;color:var(--brand)}
+.mini{height:6px;background:var(--bg);border-radius:6px;overflow:hidden;min-width:70px;position:relative}
+.mini i{display:block;height:100%;background:var(--dsm-green)}
+.mini u{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--fg);opacity:.55}
+
+/* barra de filtros */
+.filters{position:sticky;top:72px;z-index:4;background:var(--bg);padding:8px 0 4px}
+.filters .in{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:8px;align-items:end;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.filters label{margin:0}
+.filters select{margin-top:3px;padding:7px 9px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font-size:11px;border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--card));border-radius:20px;padding:2px 9px;cursor:pointer}
+
+.cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:10px 0}
+.card{background:var(--card);border:1px solid var(--border);border-top:3px solid var(--dsm-cyan);border-radius:10px;padding:10px 12px}
+.card:nth-child(2){border-top-color:var(--planned)}.card:nth-child(3){border-top-color:var(--dsm-orange)}.card:nth-child(4){border-top-color:var(--dsm-green)}.card:nth-child(5){border-top-color:var(--red)}
+.card b{display:block;font-size:21px;color:var(--brand)}
 .card span{color:var(--muted);font-size:11px}
-.chartbox{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin:10px 0}
-.chartbox h3{margin:0 0 6px;font-size:13px}
+.chartbox{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin:10px 0}
+.chartbox h3{margin:0 0 2px;font-size:14px;color:var(--brand)}
 svg{width:100%;height:auto;overflow:visible;display:block}
-.legend{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-top:4px;flex-wrap:wrap}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-top:4px;flex-wrap:wrap}
 .legend i{display:inline-block;width:14px;height:3px;margin-right:4px;vertical-align:middle}
+.grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:10px}
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.day{border:1px solid var(--border);border-radius:10px;padding:9px 10px;cursor:pointer;background:var(--card);border-left:4px solid var(--planned)}
+.day.today{border-left-color:var(--dsm-orange)}
+.day.sel{outline:2px solid var(--accent)}
+.day .d{font-weight:700;color:var(--brand);font-size:13px}
+.day .n{font-size:11px;color:var(--muted);margin:3px 0 5px}
+.day .p{font-weight:700;font-size:15px}
+
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:end}
-.controls>*{flex:1;min-width:150px}
+.controls>*{flex:1;min-width:160px}
 .controls label{margin:0}
-.row{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--dsm-cyan);border-radius:8px;padding:9px 11px;margin-bottom:7px}
-.row.done{border-left-color:var(--dsm-green)}
-.rowtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.info{flex:1;min-width:220px}
-.name{font-size:12.5px;font-weight:600}
-.meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.tag{display:inline-block;padding:1px 6px;border-radius:5px;background:var(--bg);border:1px solid var(--border);font-size:10px}
-.pctbox{display:flex;align-items:center;gap:8px;min-width:240px}
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:color-mix(in srgb,var(--dsm-orange) 10%,var(--card));border:1px solid color-mix(in srgb,var(--dsm-orange) 45%,var(--border));border-radius:10px;padding:8px 12px;margin-top:10px}
+.who select{width:auto;min-width:200px;margin:0;padding:6px 8px}
+.row{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--planned);border-radius:9px;padding:10px 12px;margin-bottom:8px}
+.row.st-and{border-left-color:var(--dsm-orange)}.row.st-ok{border-left-color:var(--dsm-green)}.row.st-late{border-left-color:var(--red)}.row.st-hoje{border-left-color:var(--dsm-cyan)}
+.rowtop{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.info{flex:1;min-width:240px}
+.name{font-size:13px;font-weight:700}
+.meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.tag{display:inline-block;padding:1px 6px;border-radius:5px;background:var(--bg);border:1px solid var(--border);font-size:10.5px}
+.tag.lider{border-color:var(--accent);color:var(--accent);font-weight:700}
+.tag.manual{border-color:var(--dsm-purple);color:var(--dsm-purple);font-weight:700}
+.stp{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;color:#fff;white-space:nowrap}
+.pctbox{display:flex;align-items:center;gap:8px;min-width:260px}
 .pctbox input[type=range]{margin:0;padding:0;border:none;background:transparent;flex:1;accent-color:var(--accent)}
-.pct{width:42px;text-align:right;font-size:13px;font-weight:700}
+.pct{width:44px;text-align:right;font-size:14px;font-weight:800}
+.quick{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}
 .bar{height:6px;border-radius:6px;background:var(--bg);margin-top:8px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--dsm-orange);transition:width .15s}
-.row.done .bar i{background:var(--dsm-green)}
+.row.st-ok .bar i{background:var(--dsm-green)}
+.upd{font-size:10.5px;color:var(--muted);margin-top:5px}
 .obsRow{display:flex;gap:6px;margin-top:8px}
 .obsRow input{margin:0;font-size:11.5px;padding:6px 8px}
 .fotoBtn{display:flex;align-items:center;justify-content:center;width:36px;height:32px;flex-shrink:0;border:1px solid var(--border);border-radius:6px;background:var(--bg);cursor:pointer}
 .fotoPrev{margin-top:6px;display:flex;align-items:center;gap:8px}
 .fotoPrev img{max-width:90px;max-height:70px;border-radius:6px;border:1px solid var(--border);object-fit:cover}
-.fotoRemove{font-size:10.5px;color:var(--muted);cursor:pointer}
-.quick{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}
-.dtRow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}.dtRow input{margin:0;width:auto;font-size:11.5px;padding:5px 8px}.dtLab{font-size:11px;font-weight:700;color:var(--brand)}.dtWarn{font-size:10.5px}
-.tag.manual{background:color-mix(in srgb,var(--dsm-purple) 15%,var(--card));border-color:var(--dsm-purple);color:var(--dsm-purple);font-weight:700}
-.row.manual{border-left-color:var(--dsm-purple)}.row.manual.done{border-left-color:var(--dsm-green)}
-.delTask{border:1px solid #c0392b;background:transparent;color:#c0392b;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}
-#manualForm{margin-top:10px}
-@media(max-width:700px){.formgrid,.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.pctbox{min-width:100%}}
-@media print{header,nav.tabs,.noprint,.obsRow .fotoBtn,.quick,.delTask{display:none!important}.row,.panel,.chartbox{break-inside:avoid}#tabProg{display:none!important}#tabExec{display:block!important}}
+.lnk{font-size:10.5px;color:var(--muted);cursor:pointer;text-decoration:underline}
+details.det{margin-top:6px;font-size:11.5px}
+details.det summary{cursor:pointer;color:var(--accent);font-size:11px}
+details.det div{white-space:pre-wrap;margin-top:4px;color:var(--muted)}
+.delTask{border:1px solid var(--red);background:transparent;color:var(--red);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:auto}
+@media(max-width:820px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.filters .in{grid-template-columns:1fr 1fr}.filters{top:64px}}
+@media(max-width:520px){.pctbox{min-width:100%}.logo small{display:none}}
+@media print{header,nav.tabs,.filters,.noprint,.quick,.delTask,.fotoBtn{display:none!important}.row,.panel,.chartbox{break-inside:avoid}section[hidden]{display:none!important}}
 </style>
 </head>
 <body>
 <header>
   <div class="brand">
-    <img class="logo" src="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%2740%27 viewBox=%270 0 120 40%27%3E%3Ctext x=%270%27 y=%2730%27 font-family=%27Arial,sans-serif%27 font-size=%2730%27 font-weight=%27800%27 fill=%27%231ea7e1%27%3EDSM%3C/text%3E%3C/svg%3E" alt="DSM">
-    <span class="logoTxt" id="logoTxt">DSM</span>
-    <div><h1>Execução de Paradas</h1><div class="sub" id="subInfo">Programação semanal · barra de % · Curva S</div></div>
+    <div class="logo"><b>ANH</b><small>a dsm-firmenich company</small></div>
+    <div><h1>Inventário 2026 · Acompanhamento de Atividades</h1><div class="sub" id="subInfo">Parada de Manutenção · Mairinque · PPCM</div><div class="sub" style="font-size:10px;opacity:.7">versão 19/11 · curva pelo dia programado</div></div>
   </div>
 </header>
 <nav class="tabs">
-  <button type="button" class="active" data-tab="prog">Programação</button>
-  <button type="button" data-tab="exec">Execução</button>
+  <button type="button" class="active" data-tab="painel">📈 Painel</button>
+  <button type="button" data-tab="ativ">🛠️ Atividades</button>
+  <button type="button" data-tab="cfg">⚙️ Planilha e cadastro</button>
 </nav>
 
 <div class="wrap">
-<!-- ================= PROGRAMAÇÃO ================= -->
-<section id="tabProg">
-  <div class="panel">
-    <h2>Nova parada</h2>
-    <div class="formgrid">
-      <label>Nome da parada<input id="stopName" placeholder="Ex.: Parada Fosfato"></label>
-      <label>Área (igual à da planilha)<input id="stopArea" list="areasList" placeholder="Ex.: Fosfato"></label>
-      <label>Data da parada<input id="stopDate" type="date"></label>
-      <label>Início (hora)<input id="stopStart" type="time" value="07:00"></label>
-      <label>Duração (horas)<input id="stopHours" type="number" min="0.5" step="0.5" value="8"></label>
+  <div class="filters" id="filters">
+    <div class="in">
+      <label>Líder<select id="fLider"></select></label>
+      <label>Dia<select id="fDia"></select></label>
+      <label>Área<select id="fArea"></select></label>
+      <button class="secondary" id="clearF" type="button">Limpar filtros</button>
     </div>
-    <label style="margin-top:10px">Observações<textarea id="stopNotes" rows="2" placeholder="Escopo, restrições, alinhamentos..."></textarea></label>
-    <div class="actionsrow"><button class="primary" id="saveStop">＋ Cadastrar parada</button><button class="secondary" id="clearStop">Limpar campos</button></div>
   </div>
 
-  <div class="panel">
-    <h2>Importar a planilha semanal</h2>
-    <div class="drop"><strong>Programação Semanal (.xlsb, .xlsx ou .csv)</strong><br><input type="file" id="scheduleFile" accept=".xlsb,.xlsx,.xls,.csv"></div>
-    <div id="importMessage" class="muted" style="margin-top:10px">Nenhuma planilha carregada. O app procura sozinho a aba de consulta e pega só as atividades das paradas cadastradas (mesma área e data dentro do período da atividade).</div>
-    <div id="importPreview" style="margin-top:8px"></div>
-    <div class="actionsrow"><button class="primary" id="importBtn" disabled>Adicionar atividades às paradas</button></div>
+<!-- ================= PAINEL ================= -->
+<section id="tabPainel">
+  <div class="cards" id="cards"></div>
+  <div class="chartbox">
+    <h3 id="chartTitle">Curva S — Planejado x Real</h3>
+    <div class="muted" id="chartSub"></div>
+    <svg id="chart" viewBox="0 0 700 280" role="img" aria-label="Curva S planejado x real"></svg>
+    <div class="legend"><span><i style="background:var(--planned)"></i>Planejado acumulado por dia (datas de início e fim)</span><span><i style="background:var(--actual)"></i>Real (o % conta no dia programado da atividade)</span><span><i style="background:var(--dsm-orange);opacity:.3;height:8px"></i>Hoje</span></div>
   </div>
-
-  <div class="panel">
-    <h2>Paradas cadastradas</h2>
-    <div id="stopsList"></div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>Por líder</h2>
+      <div class="muted" style="margin-bottom:6px">Clique num líder para ajustar a curva só com as atividades dele. “Falta” em vermelho = atrasado de dias anteriores.</div>
+      <div class="tablewrap"><table id="tLider"></table></div>
+    </div>
+    <div class="panel">
+      <h2>Por dia</h2>
+      <div class="muted" style="margin-bottom:6px">Atividades programadas em cada dia (data início → fim). Clique para filtrar.</div>
+      <div class="days" id="days"></div>
+    </div>
+  </div>
+  <div class="actionsrow noprint">
+    <button class="primary" id="expRel">📄 Relatório (PDF) com os filtros atuais</button>
+    <button class="secondary" id="printBtn">🖨️ Imprimir tela</button>
   </div>
 </section>
 
-<!-- ================= EXECUÇÃO ================= -->
-<section id="tabExec" hidden>
+<!-- ================= ATIVIDADES ================= -->
+<section id="tabAtiv" hidden>
+  <div class="who noprint">
+    <strong style="font-size:12px">👷 Lançando como:</strong>
+    <select id="whoSel"></select>
+    <span class="muted">Atualize o % a qualquer momento — a data e hora são registradas sozinhas.</span>
+  </div>
   <div class="controls">
-    <label>Parada<select id="selStop"></select></label>
-    <label>Mostrar<select id="fStatus"><option value="">Todas as atividades</option><option value="pend">Não iniciadas (0%)</option><option value="and">Em andamento</option><option value="ok">Concluídas (100%)</option></select></label>
-    <label>Pesquisar<input type="text" id="busca" placeholder="🔎 ordem, descrição, local, equipe..."></label>
+    <label>Mostrar<select id="fStatus">
+      <option value="">Todas</option><option value="pend">Não iniciadas (0%)</option><option value="and">Em andamento</option>
+      <option value="ok">Concluídas (100%)</option><option value="late">Atrasadas (passou da data fim)</option><option value="hoje">Programadas para hoje</option></select></label>
+    <label>Pesquisar<input type="text" id="busca" placeholder="🔎 ordem, descrição, equipamento, executante..."></label>
   </div>
-  <div id="execBody"></div>
-  <div class="actionsrow noprint">
-    <button class="primary" id="expRel">📄 Gerar relatório da parada (PDF)</button>
-    <button class="secondary" id="printBtn">🖨️ Imprimir tela</button>
-    <button class="secondary" id="expJson">Backup (JSON)</button>
-    <button class="secondary" id="impJsonBtn">Restaurar backup</button>
-    <input type="file" id="impJson" accept=".json" hidden>
+  <div class="muted" id="count" style="margin:4px 0 8px"></div>
+  <div id="list"></div>
+</section>
+
+<!-- ================= CONFIGURAÇÃO ================= -->
+<section id="tabCfg" hidden>
+  <div class="panel">
+    <h2>Atualizar pela planilha</h2>
+    <div class="drop"><strong>Parada de Manutenção Inventário (.xlsx, .xlsb ou .csv)</strong><br><input type="file" id="sheetFile" accept=".xlsx,.xlsb,.xls,.csv"></div>
+    <div id="importMsg" class="muted" style="margin-top:10px">A programação da planilha já vem carregada. Se a planilha mudar (novas atividades, datas ou líder trocados), carregue de novo aqui: as atividades novas entram e as existentes são atualizadas, mantendo o % e as observações já lançados.</div>
+    <div id="importPrev" style="margin-top:8px"></div>
+    <div class="actionsrow"><button class="primary" id="importBtn" disabled>Aplicar planilha</button></div>
   </div>
-  <div class="muted noprint" style="margin-top:6px">Os dados são sincronizados pela nuvem (Firebase) e também ficam salvos neste navegador. Use o backup como cópia de segurança.</div>
+
+  <div class="panel">
+    <h2>Cadastrar atividade fora da planilha</h2>
+    <div class="formgrid">
+      <label style="grid-column:span 2">Descrição *<input id="mDesc" placeholder="Ex.: Troca de rolamento do motor M-101"></label>
+      <label>Líder *<input id="mLider" list="lideresList" placeholder="Ex.: RAFAEL GALLY"></label>
+      <label>Área<input id="mArea" list="areasList" placeholder="Ex.: FOSFATO"></label>
+      <label>Equipamento<input id="mEquip"></label>
+      <label>Ordem<input id="mOrdem"></label>
+      <label>Data início *<input id="mIni" type="date"></label>
+      <label>Data fim<input id="mFim" type="date"></label>
+      <label>HH total<input id="mHH" type="number" min="0" step="0.5"></label>
+      <label>Executante(s)<input id="mExec"></label>
+    </div>
+    <div class="actionsrow"><button class="primary" id="saveManual" type="button">💾 Salvar atividade</button></div>
+  </div>
+
+  <div class="panel">
+    <h2>Backup</h2>
+    <div class="muted">Os lançamentos sincronizam pela nuvem (Firebase) e também ficam salvos neste navegador. Use o backup como cópia de segurança.</div>
+    <div class="actionsrow">
+      <button class="secondary" id="expJson">⬇ Baixar backup (JSON)</button>
+      <button class="secondary" id="impJsonBtn">⬆ Restaurar backup</button>
+      <button class="secondary" id="expCsv">⬇ Exportar status (CSV)</button>
+      <input type="file" id="impJson" accept=".json" hidden>
+    </div>
+  </div>
 </section>
 </div>
-<datalist id="areasList"></datalist>
+<datalist id="lideresList"></datalist><datalist id="areasList"></datalist>
 
+<script type="application/json" id="seed">[{"item": 1, "forn": "HIDRAUPAR", "pedido": "4502530911", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258271", "plano": "N/A", "area": "FOSFATO", "equip": "UNIDADE HIDRAULICA", "name": "UNIDADE HIDRÁULICA FASE 01- DESMONTAGEM MANUTENÇÃO PREVENTIVA COM SERVIÇO EXTERNO", "det": "DESMONTAR UNIDADE HIDRAULICA 4 HORAS PARA DESMONTAGEM + 4 HORAS PARA MONTAGEM", "hh": 6, "qnt": "1", "exec": "ADRIANO JUBAIR", "rec": "ANDAIME / PLANO DE RESGATE", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 2, "forn": "HIDRAUPAR", "pedido": "4502530911", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258271", "plano": "N/A", "area": "FOSFATO", "equip": "UNIDADE HIDRAULICA", "name": "UNIDADE HIDRÁULICA FASE 01- MONTAGEM MANUTENÇÃO PREVENTIVA COM SERVIÇO EXTERNO", "det": "MONTAR UNIDADE HIDRAULICA 4 HORAS PARA DESMONTAGEM + 4 HORAS PARA MONTAGEM + LUBRIN COMPLETAR NIVEL DE OLEO + PAU DE CARGA", "hh": 6, "qnt": "1", "exec": "ADRIANO JUBAIR", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 3, "forn": "HIDRAUPAR", "pedido": "4502530911", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258272", "plano": "N/A", "area": "FOSFATO", "equip": "UNIDADE HIDRAULICA", "name": "UNIDADE HIDRÁULICA FASE 02- DESMONTAGEM MANUTENÇÃO PREVENTIVA COM SERVIÇO EXTERNO", "det": "DESMONTAR UNIDADE HIDRAULICA 4 HORAS PARA DESMONTAGEM + 4 HORAS PARA MONTAGEM + LUBRIN COMPLETAR NIVEL DE OLEO", "hh": 6, "qnt": "1", "exec": "LUIZ EDUARDO", "rec": "CONSERTO EXTERNO", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 4, "forn": "HIDRAUPAR", "pedido": "4502530911", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258272", "plano": "N/A", "area": "FOSFATO", "equip": "UNIDADE HIDRAULICA", "name": "UNIDADE HIDRÁULICA FASE 02- MONTAGEM MANUTENÇÃO PREVENTIVA COM SERVIÇO EXTERNO", "det": "MONTAR UNIDADE HIDRAULICA 4 HORAS PARA DESMONTAGEM + 4 HORAS PARA MONTAGEM + LUBRIN COMPLETAR NIVEL DE OLEO", "hh": 6, "qnt": "1", "exec": "LUIZ EDUARDO", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 5, "forn": "REVCAL", "pedido": "4502529666", "tipo": "MANDATÓRIO", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7250015 7250016 7250017 7250018", "plano": "4856/4857", "area": "UTILIDADES", "equip": "GS-04130A-02", "name": "DETECTOR DE GÁS DA CALDEIRA DO APOLLO - SÉRIE:3452473", "det": "1 - VERIFICAR A IDENTIFICAÇÃO, O MODELO, O NÚMERO DE SÉRIE E AS CONDIÇÕES FÍSICAS DOS DETECTORES\n\n2 - APLICAR GÁS PADRÃO CERTIFICADO, COM CONCENTRAÇÃO CONHECIDA E COMPATÍVEL COM O GÁS MONITORADO, UTILIZANDO REGULADOR DE VAZÃO E ADAPTADOR APROPRIADO PARA REALIZAR O ENSAIO DE CALIBRAÇÃO.\n\n3 - VERIFICAR A RESPOSTA DO SENSOR, CONFRONTAR AS LEITURAS COM A CONCENTRAÇÃO DE REFERÊNCIA  CONFORME PROCEDIMENTO DO FABRICANTE E CRITÉRIOS DE TOLERÂNCIA ESTABELECIDOS.\n\n4 - REALIZAR TESTE DE RESPOSTA E DOS ALARMES CONFIGURADOS,IDENTIFICAR OS PADRÕES UTILIZADOS E EMITIR O CERTIFICADO OU RELATÓRIO DE CALIBRAÇÃO", "hh": 1, "qnt": "2", "exec": "HIGOR SAKAE / TÉCNICO REVCAL 1", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 6, "forn": "REVCAL", "pedido": "4502529666", "tipo": "MANDATÓRIO", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7250015 7250016 7250017 7250018", "plano": "4856/4857", "area": "UTILIDADES", "equip": "GS-04130A-03", "name": "DETECTOR DE GÁS DA CALDEIRA DO APOLLO - MODELO ST 441/1 - SÉRIE: 003462445", "det": "1 - VERIFICAR A IDENTIFICAÇÃO, O MODELO, O NÚMERO DE SÉRIE E AS CONDIÇÕES FÍSICAS DOS DETECTORES\n\n2 - APLICAR GÁS PADRÃO CERTIFICADO, COM CONCENTRAÇÃO CONHECIDA E COMPATÍVEL COM O GÁS MONITORADO, UTILIZANDO REGULADOR DE VAZÃO E ADAPTADOR APROPRIADO PARA REALIZAR O ENSAIO DE CALIBRAÇÃO.\n\n3 - VERIFICAR A RESPOSTA DO SENSOR, CONFRONTAR AS LEITURAS COM A CONCENTRAÇÃO DE REFERÊNCIA  CONFORME PROCEDIMENTO DO FABRICANTE E CRITÉRIOS DE TOLERÂNCIA ESTABELECIDOS.\n\n4 - REALIZAR TESTE DE RESPOSTA E DOS ALARMES CONFIGURADOS,IDENTIFICAR OS PADRÕES UTILIZADOS E EMITIR O CERTIFICADO OU RELATÓRIO DE CALIBRAÇÃO", "hh": 1, "qnt": "2", "exec": "HIGOR SAKAE / TÉCNICO REVCAL 1", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 7, "forn": "REVCAL", "pedido": "4502529666", "tipo": "MANDATÓRIO", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7250015 7250016 7250017 7250018", "plano": "4856/4857", "area": "UTILIDADES", "equip": "GS-04130A-01", "name": "DETECTOR DE GÁS DA CALDEIRA DO APOLLO - MODELO ST 441/1M - SÉRIE: 003493648", "det": "1 - VERIFICAR A IDENTIFICAÇÃO, O MODELO, O NÚMERO DE SÉRIE E AS CONDIÇÕES FÍSICAS DOS DETECTORES\n\n2 - APLICAR GÁS PADRÃO CERTIFICADO, COM CONCENTRAÇÃO CONHECIDA E COMPATÍVEL COM O GÁS MONITORADO, UTILIZANDO REGULADOR DE VAZÃO E ADAPTADOR APROPRIADO PARA REALIZAR O ENSAIO DE CALIBRAÇÃO.\n\n3 - VERIFICAR A RESPOSTA DO SENSOR, CONFRONTAR AS LEITURAS COM A CONCENTRAÇÃO DE REFERÊNCIA  CONFORME PROCEDIMENTO DO FABRICANTE E CRITÉRIOS DE TOLERÂNCIA ESTABELECIDOS.\n\n4 - REALIZAR TESTE DE RESPOSTA E DOS ALARMES CONFIGURADOS,IDENTIFICAR OS PADRÕES UTILIZADOS E EMITIR O CERTIFICADO OU RELATÓRIO DE CALIBRAÇÃO", "hh": 16, "qnt": "2", "exec": "HIGOR SAKAE / TÉCNICO REVCAL 1", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 8, "forn": "GAUDIUM", "pedido": "N/A", "tipo": "MANDATÓRIO", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "1069667", "ordem": "7257059", "plano": "N/A", "area": "UTILIDADES", "equip": "CALDEIRA", "name": "RETIRADA DE ISOLAMENTO TÉRMICO LINHA DE VAPOR", "det": "REALIZAR A RETIRADA DO ISOLAMENTO TERMICO PARA INSPEÇÃO DAS CURVAS DA LINHA DE VAPOR , LOCALIZADAS ACIMA DA CALDEIRA", "hh": 1, "qnt": "1", "exec": "TECNICO GAUDIUM", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 9, "forn": "ITI", "pedido": "N/A", "tipo": "MANDATÓRIO", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7206073", "plano": "N/A", "area": "UTILIDADES", "equip": "CALDEIRA", "name": "INSPÇÃO LINHA DE VAPOR", "det": "REALIZAR A INSPEÇÃO DAS CURVAS E LINHAS DA REDE DE VAPOR", "hh": 1, "qnt": "1", "exec": "ITI / LEONARDO ROSA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 10, "forn": "GAUDIUM", "pedido": "N/A", "tipo": "MANDATÓRIO", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "1069667", "ordem": "7257059", "plano": "N/A", "area": "UTILIDADES", "equip": "CALDEIRA", "name": "RECOLOCAÇÃO DE ISOLAMENTO TÉRMICO LINHA DE VAPOR", "det": "REALIZAR A RECOLOCAÇÃO DO ISOLAMENTO TERMICO PARA INSPEÇÃO DAS CURVAS DA LINHA DE VAPOR , LOCALIZADAS ACIMA DA CALDEIRA", "hh": 1, "qnt": "1", "exec": "TECNICO GAUDIUM", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 11, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7258308", "plano": "N/A", "area": "UTILIDADES", "equip": "CALDEIRA", "name": "SANAR VAZAMENTO DA BOMBA DA CALDEIRA", "det": "SANAR VAZAMENTO DA BOMBA DA CALDEIRA", "hh": 8, "qnt": "2", "exec": "LEONARDO ROSA / HIGOR SAKAE", "rec": "", "ini": "2026-11-19", "fim": "2026-11-20"}, {"item": 12, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258296", "plano": "N/A", "area": "FOSFATO", "equip": "ROSCA 911", "name": "INSPEÇÃO PONTA DE EIXO ROSCA 911", "det": "INSPEÇÃO PONTAS DE EIXO + REVISÃO DO MANCAL DO LADO OPOSTO + ELIMINAR VAZAMENTO DO MOTORREDUTOR", "hh": 16, "qnt": "2", "exec": "LUIZ EDUARDO / ADRIANO JUBAIR", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 13, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "1069631", "ordem": "7258297", "plano": "N/A", "area": "FOSFATO", "equip": "ROSCA 812", "name": "INSPEÇÃO PONTA DE EIXO ROSCA 812", "det": "INSPEÇÃO DAS PONTAS DE EIXO + REVISÃO DO MANCAL DO LADO OPOSTO  + USINAGEM", "hh": 16, "qnt": "2", "exec": "DOUGLAS ARAUJO / ITALO PINHEIRO", "rec": "PLANO DE RESGATE / ESPAÇO CONFINADO", "ini": "2026-11-23", "fim": "2026-11-23"}, {"item": 14, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "1069630", "ordem": "7258298", "plano": "N/A", "area": "FOSFATO", "equip": "ROSCA 912", "name": "INSPEÇÃO PONTA DE EIXO ROSCA 912", "det": "INSPEÇÃO DAS PONTAS DE EIXO + REVISÃO DO MANCAL DO LADO OPOSTO  + USINAGEM", "hh": 16, "qnt": "2", "exec": "DOUGLAS ARAUJO / ITALO PINHEIRO", "rec": "PLANO DE RESGATE", "ini": "2026-11-21", "fim": "2026-11-21"}, {"item": 15, "forn": "ITI", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7258400", "plano": "N/A", "area": "UTILIDADES", "equip": "COMPRESSOR 11", "name": "CALIBRAÇÃO DE INSTRUMENTOS COMPRESSOR 11", "det": "CALIBRAÇÃO NR13", "hh": 6, "qnt": "1", "exec": "ITI / LEONARDO ROSA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 16, "forn": "ITI", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7258402", "plano": "N/A", "area": "UTILIDADES", "equip": "COMPRESSOR 15", "name": "CALIBRAÇÃO DE INSTRUMENTOS COMPRESSOR 15", "det": "CALIBRAÇÃO NR13", "hh": 6, "qnt": "1", "exec": "ITI / LEONARDO ROSA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 17, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258311", "plano": "N/A", "area": "TM FORBERG", "equip": "TUB OLEO TERMICO", "name": "TROCA DE TRECHO TUBULAÇÃO DO OLEO TERMICO", "det": "TROCA DE TRECHO TUBULAÇÃO DO OLEO TERMICO", "hh": 6, "qnt": "1", "exec": "SALATIEL AMBROSIO", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 18, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7250656 / 7250657 7257406 / 7257847", "plano": "1183", "area": "TM FORBERG", "equip": "FORBERG 1", "name": "PREVENTIVA GERAL", "det": "1 - MEDIR O CANAL DAS POLIAS, VERIFICAR NECESSIDADE DE TROCA DO JOGO COMPLETO DE 6 CORREIAS, ALINHAR E TENSIONAR.\n2 - REDUTOR\nVERIFICAR NECESSIDADE DE TROCAR O ÓLEO SE ESTIVER VENCIDO (SEM MISTURAR MINERAL E SINTÉTICO) E VERIFICAR RESPIRO E VAZAMENTOS.\n3 - RETENTORES\nTROCAR OS RETENTORES 60X80 E 160X185 SE HOUVER VAZAMENTO OU JUNTO COM A TROCA DO ÓLEO.\n4 - MANCAIS\nTROCAR OS VEDADORES TSNA 512 C E 522 C, RELUBRIFICAR E REAPERTAR. INSPECIONAR OS MANCAIS DE FLANGE DAS COMPORTAS (REVISADOS EM JUN/26).\n5 - EIXO, CÂMARA E PAINEL\nRE-ENGAXETAR O EIXO, REFAZER A VEDAÇÃO DAS TAMPAS E COMPORTAS COM SILICONE, LIMPAR CONTATOS E TESTAR EMERGÊNCIA E INTERTRAVAMENTOS.", "hh": 16, "qnt": "2", "exec": "CRISTIAN HERNANDES / JHONATAN MAICOM", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 19, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7250658 / 7250659 7257407 / 7257848", "plano": "1184", "area": "TM FORBERG", "equip": "FORBERG 2", "name": "PREVENTIVA GERAL", "det": "1 - MEDIR O CANAL DAS POLIAS, VERIFICAR NECESSIDADE DE TROCA DO JOGO COMPLETO DE 6 CORREIAS, ALINHAR E TENSIONAR.\n2 - REDUTOR\nVERIFICAR NECESSIDADE DE TROCAR O ÓLEO SE ESTIVER VENCIDO (SEM MISTURAR MINERAL E SINTÉTICO) E VERIFICAR RESPIRO E VAZAMENTOS.\n3 - RETENTORES\nTROCAR OS RETENTORES 60X80 E 160X185 SE HOUVER VAZAMENTO OU JUNTO COM A TROCA DO ÓLEO.\n4 - MANCAIS\nTROCAR OS VEDADORES TSNA 512 C E 522 C, RELUBRIFICAR E REAPERTAR. INSPECIONAR OS MANCAIS DE FLANGE DAS COMPORTAS (REVISADOS EM JUN/26).\n5 - EIXO, CÂMARA E PAINEL\nRE-ENGAXETAR O EIXO, REFAZER A VEDAÇÃO DAS TAMPAS E COMPORTAS COM SILICONE, LIMPAR CONTATOS E TESTAR EMERGÊNCIA E INTERTRAVAMENTOS.", "hh": 24, "qnt": "2", "exec": "DOUGLAS ARAUJO / ITALO PINHEIRO", "rec": "PLANO DE RESGATE / ESPAÇO CONFINADO", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 20, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7231096 / 7231097", "plano": "1178", "area": "TM FORBERG", "equip": "FORBERG 2", "name": "FILTRO DE MANGAS DO FORBERG 2 DO TM FORBERG", "det": "INSPECIONAR E SE NECESSARIO EFETUAR A TROCA , VERIFICANDO CORDOALHAS DE ATERRAMENTO", "hh": 2, "qnt": "1", "exec": "DOUGLAS ARAUJO / ITALO PINHEIRO", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 21, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "ISADORA BONATO", "turno": "1", "ptw": "", "ordem": "7258314", "plano": "N/A", "area": "FOSFATO", "equip": "ROSCA 911", "name": "PINTURA EM CAIXA DA ROSCA 811 / 911 / 812/ 912/", "det": "EFETUAR PINTURA EM COR MARFIM NACAIXA DA  ROSCA 812 DO FOSFATO", "hh": 16, "qnt": "1", "exec": "PAULO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 22, "forn": "ITI", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7252353 / 7252354", "plano": "N/A", "area": "UTILIDADES", "equip": "CALDEIRA", "name": "CALIBRAÇÃO DA VALVULA DE VAPOR DA CALDEIRA - PSV-21530A-01 E PSV-21530A-02", "det": "CALIBRAÇÃO NR13", "hh": 6, "qnt": "1", "exec": "ITI / LEONARDO ROSA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 23, "forn": "HIDRAUPAR", "pedido": "4502530911", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "1069639", "ordem": "7258253", "plano": "N/A", "area": "ZOOTECNICA", "equip": "UNIDADE HIDRAULICA", "name": "UNIDADE HIDRAULICA - DESMONTAGEM MISTURADOR BELLA", "det": "DESMONTAR UNIDADE HIDRAULICA PARA ENVIO  PARA REPARO EXTERNO - DURANTE DESMONTAGEM REALIZAR MARCAÇÕES DAS CONEXÕES E DAS BOBINAS DE ACIONAMENTO PARA NÃO INVERTER DURANTE MONTAGEM - AS UNIDADES HIDRAULICAS SERÃO RETIRADAS PARA REPARO AS 08:00 AM DO DIA 19/11/2026", "hh": 10, "qnt": "1", "exec": "GILMAR ALVES / WILLIAM OLIVEIRA", "rec": "ENVIO PARA CONSERTO EXTERNO", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 24, "forn": "HIDRAUPAR", "pedido": "4502530911", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "1069639", "ordem": "7258254", "plano": "N/A", "area": "ZOOTECNICA", "equip": "UNIDADE HIDRAULICA", "name": "UNIDADE HIDRAULICA - MONTAGEM MISTURADOR BELLA", "det": "MONTAR UNIDADE HIDRAULICA PARA ENVIO  PARA REPARO EXTERNO - DURANTE DESMONTAGEM REALIZAR MARCAÇÕES DAS CONEXÕES E DAS BOBINAS DE ACIONAMENTO PARA NÃO INVERTER DURANTE MONTAGEM", "hh": 10, "qnt": "1", "exec": "GILMAR ALVES / JOAO PEDRO", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 25, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258299", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "ROSCA 700", "name": "PREVENTIVA ROSCA 700", "det": "REALIZAR INSPEÇÃO VISUAL NA ROSCA 700", "hh": 4, "qnt": "1", "exec": "GIOVANI QUEIROZ", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 26, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "1069662", "ordem": "7258313", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "MAQUINA DE COSTURA", "name": "INSTALAÇÃO DO CORTADOR AUTOMATICO E TOMBADOR DE SACARIA", "det": "INSTALAÇÃO DO CORTADOR AUTOMATICO E TOMBADOR DE SACARIA", "hh": 10, "qnt": "2", "exec": "CLAUDIO RODRIGUES / GABRIEL BATISTA", "rec": "DEIVID BRITO", "ini": "2026-11-19", "fim": "2026-11-22"}, {"item": 27, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "1069641", "ordem": "7242894 / 7242895", "plano": "213", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "MISTURADOR FORBERG MISTURA 01 ZOOTECNICA", "det": "1 - INSPECIONAR CORREIAS E AJUSTAR TENSÃO SE NECESSARIO SOLICITAR TROCA \n2 - GRADE STEELFLEX CONFERIR ALINHAMENTO E TROCA DO KIT DE VEDAÇÃO SE NECESSARIO\n3 - LUBRIFICAÇÃO COM GRAXA DO ACOPLAMENTO \n4 - LUBRIFICAÇÃO OLEO DE ENGRENAGEM\n5 - VERIFICAÇÃO DO REDUTOR + TROCA DO RETENTOR JUNTO COM O OLEO DO REDUTOR\n6 - INSPECIONAR VEDADOR / VEDAÇÃO DAS TAMPAS E COMPORTAS \n7 - RE-ENGAXETAMENTO DO EIXO \n8 - LIMPEZA E APERTO DOS BORNES DO PAINEL E SENSORES", "hh": 20, "qnt": "2", "exec": "SANDRO SOTO / CEZAR PRIMO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 28, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "1069666", "ordem": "7253183 / 7253184", "plano": "1262", "area": "POLIVITAMINICOS", "equip": "MISTURADOR 2", "name": "MISTURADOR 02 POLIVITAMINICO", "det": "1 - REALIZAR PREVENTIVA DE VEDAÇÃO DAS TAMPAS E COMPORTAS \n2 - ENGAXETAMENTO DO EIXO, VERIFICAR SE TEM VAZAMENTO E AJUSTAR APERTOS DE FORMA UNIFORME\n3 - VERIFICAR ESTADO DE LUBRIFICAÇÃO E LUBRIFICAR PREVENTIVAMENTE \n4 - VERIFICAR SE HÁ VAZAMENTO DE ÓLEO OU GRAXA NO RETENTOR \n5 - INSPECIONAR MANCAIS E ROLAMENTOS VERIFICAR SE TEM RUIDO OU FOLGA.\n6 - VERIFICAR VIDA UTIL DOS FILTROS CARTUCHO \n7 - REAPERTO E LIMPEZA DOS BORNES DO PAINEL E SENSORES E SISTEMA DE SEGURANÇA\n8 - TROCA DA BORRACHA DA COMPORTA", "hh": 20, "qnt": "2", "exec": "DEIVID BRITO / DOUGLAS RODRIGO", "rec": "ESPAÇO CONFINADO / PLANO DE RESGATE", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 29, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7252850 / 7252851", "plano": "1271", "area": "POLIVITAMINICOS", "equip": "FILTRO 405", "name": "FILTRO DO SILO 405 DO POLIVITAMINICO", "det": "1 - INSPEÇÃO E TROCA DE FILTRO MANGA \n2 - VERIFICAÇÃO VALVULAS E SOLENOIDES\n3 - VERIFICAR MANOMETRO DE PRESSÃO DIFERENCIAL\n4 - VERIFICAR PRESSÃO DO RESERVATORIO \n5  - VERIFICAR MEDIDOR DE VAZAO\n6 - LIMPEZA E 5S", "hh": 4, "qnt": "1", "exec": "GIOVANI QUEIROZ", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 30, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "1069643", "ordem": "7258180", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "REFAZER GUIAS DAS ESTEIRAS PARA MELHORAR A LEGIBILIDADE DO CARIMBO NAS SACARIAS", "det": "REFAZER GUIAS DAS ESTEIRAS PARA MELHORAR A LEGIBILIDADE DO CARIMBO NAS SACARIAS", "hh": 20, "qnt": "2", "exec": "ANSELMO LIBERATO / DOUGLAS RODRIGO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 31, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "IT", "ordem": "7258181", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "TROCAR FILTRO DO DESGRUMADOR DO ELE 01", "det": "FILTROS 3060000734", "hh": 4, "qnt": "1", "exec": "CARLOS SANTOS / OPERACIONAL", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 32, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "IT", "ordem": "7258182", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "TROCAR FILTROS CARTUCHOS DO DESGRUMADOR DO ELEVADOR 03", "det": "FILTROS 3060000734", "hh": 4, "qnt": "1", "exec": "CARLOS SANTOS / OPERACIONAL", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 33, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "1069642", "ordem": "7258185", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "MANUTENÇÃOS DAS ENSACADEIRAS", "det": "SOPRADORES / VERFICAÇÃO DE MOLAS /", "hh": 12, "qnt": "1", "exec": "WILLIAM OLIVEIRA", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 34, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "1069644", "ordem": "7258224", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "TROCAR JETS DAS BALANÇAS 01, 02, E 03 DEVIDO BAIXA EFICIENCIA", "det": "MANUTENÇÃO NOS VIBRAJETS DAS BALANÇAS 1, 2 E 3, VERIFICAR CONDIÇÕES DA VALVULAS (3060022346) E JETS E VAVULAS REALIZANDO A TROCA DE VALULAS SE NECESSARIO", "hh": 20, "qnt": "2", "exec": "DOUGLAS RODRIGO / JHONATAN MAICOM", "rec": "", "ini": "2026-11-21", "fim": "2026-11-21"}, {"item": 35, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "1069642", "ordem": "7258235", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "DESTRAVAR VALVULAS DE ENTRADA DAS ENSACADEIRAS 03 E 05", "det": "DESTRAVAR VALVULAS DE ENTRADA DAS ENSACADEIRAS 03 E 05 / SE NECESSARIO TRABALHO A QUENTE", "hh": 8, "qnt": "1", "exec": "JHONATAN MAICOM", "rec": "ESCADA", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 36, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "1069642", "ordem": "7258237", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "TROCAR BICO DA ENSACADEIRA 06", "det": "3060032621 BICO C/FURO RESP SAT PARANA AC00378", "hh": 8, "qnt": "1", "exec": "CLECIO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 37, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "IT", "ordem": "7257406", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "ROLETES DE APOIO DAS ESTEIRAS DE TELAS E CORRUGADAS", "det": "EFETUAR A TROCA DOS ROLETES DE APOIO DAS STEIRAS DE TELAS E CORRUGADAS. AS PEÇAS ESTÃO NO GREMIO", "hh": 20, "qnt": "2", "exec": "JHONATAN MAICOM / DOUGLAS RODRIGO", "rec": "", "ini": "2026-11-22", "fim": "2026-11-22"}, {"item": 38, "forn": "ITI", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7204332", "plano": "3020", "area": "ZOOTECNICA", "equip": "TP DE CAULIM", "name": "1A-INSP TANQUE BALANCA TP-53319A FOSFATO", "det": "EXAME VISUAL INTERNO | EXAME VISUAL EXTERNO | ME-MEDIÇÃO DE ESPESSURA", "hh": 2, "qnt": "1", "exec": "ITI", "rec": "BRIGADISTA", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 39, "forn": "ITI", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258159", "plano": "5222", "area": "ZOOTECNICA", "equip": "TP DE FILITO", "name": "M-PA-PREV GERAL TRANS PNEUM.TP-58419C-4A", "det": "EXAME VISUAL INTERNO | EXAME VISUAL EXTERNO | ME-MEDIÇÃO DE ESPESSURA", "hh": 16, "qnt": "2", "exec": "ITI", "rec": "BRIGADISTA", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 40, "forn": "ITI", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258160", "plano": "5244", "area": "ZOOTECNICA", "equip": "TP DE FILITO", "name": "M-PA-PREV GERALTRANS. PNEUM.TP-58419A-4A", "det": "EXAME VISUAL INTERNO | EXAME VISUAL EXTERNO | ME-MEDIÇÃO DE ESPESSURA", "hh": 16, "qnt": "2", "exec": "ITI", "rec": "BRIGADISTA", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 41, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "IT", "ordem": "7258315", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 03", "name": "ESTEIRA CURVA LADO 1 - AJUSTAR ESTEIRA E ELIMINAR DESLIZAMENTO", "det": "AJUSTAR ESTEIRA E ELIMINAR DESLIZAMENTO", "hh": 3, "qnt": "2", "exec": "JOAO PEDRO / CEZAR PRIMO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 42, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "IT", "ordem": "7258316", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 03", "name": "ESTEIRA CURVA LADO 2 - AJUSTAR ESTEIRA E ELIMINAR DESLIZAMENTO", "det": "AJUSTAR ESTEIRA E ELIMINAR DESLIZAMENTO", "hh": 3, "qnt": "2", "exec": "JOAO PEDRO / CEZAR PRIMO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 43, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "IT", "ordem": "7258317", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 03", "name": "DESTRAVAMENTO E LUBRIFICAÇÃO DE ROLETES GRAVITACIONAIS", "det": "DESTRAVAMENTO E LUBRIFICAÇÃO DE ROLETES GRAVITACIONAIS- COLETAR MEDIDAS PARA FABRICAÇÃO DOS ITENS", "hh": 10, "qnt": "1", "exec": "JOAO PEDRO", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 44, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258319", "plano": "N/A", "area": "ZOOTECNICA", "equip": "PREMIX", "name": "VERIFICAÇÃO GERAL BALANÇAS PREMIX", "det": "PREVENTIVA NAS BALANÇAS DO PREMIX, VERIFICAR CABEAMENTO E EMENDAS DOS MÓDULOS DAS BALANÇAS / CELULAS DE CARGA / RECORRENCIA DE FALHAS", "hh": 8, "qnt": "1", "exec": "LEONARDO OLIVEIRA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 45, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258345", "plano": "N/A", "area": "ZOOTECNICA", "equip": "PREMIX", "name": "TRANSPORTADOR DE ARRASTE BAG STATION", "det": "VERIFICAÇÃO DAS TALISCAS E CORRENTES", "hh": 20, "qnt": "2", "exec": "ANSELMO LIBERATO / CHARLEY MARTINS", "rec": "", "ini": "2026-11-20", "fim": "2026-11-21"}, {"item": 46, "forn": "INTERNO", "pedido": "N/A", "tipo": "SHE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7255195", "plano": "4816", "area": "ZOOTECNICA", "equip": "PREMIX", "name": "3M- INSP MEC VALV.EXPLOSÃO VEX–54124A-01", "det": "INSPEÇÃO VALVULAS VEX", "hh": 8.6, "qnt": "1", "exec": "CEZAR PRIMO", "rec": "TESOURINHA", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 47, "forn": "INTERNO", "pedido": "N/A", "tipo": "SHE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7255196", "plano": "4817", "area": "ZOOTECNICA", "equip": "PREMIX", "name": "3M- INSP MEC VALV.EXPLOSÃO VEX–54124B-01", "det": "INSPEÇÃO VALVULAS VEX", "hh": 8.6, "qnt": "1", "exec": "CARLOS SANTOS", "rec": "TESOURINHA", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 48, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258435", "plano": "N/A", "area": "ZOOTECNICA", "equip": "ELEVADOR", "name": "SUBSTITUIÇÃO DAS CANECAS DO ELEVADOR 2 DA M2", "det": "SUBSTITUIÇÃO DE CANECAS DANIFICADAS", "hh": 20, "qnt": "2", "exec": "CRISTIAN HERNANDES / JONH RODINEY DE OLIVEIRA", "rec": "", "ini": "2026-11-21", "fim": "2026-11-22"}, {"item": 49, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258434", "plano": "N/A", "area": "ZOOTECNICA", "equip": "ROSCA DE FILITO M2", "name": "INSPEÇÃO DA ROSCA DE FILITO", "det": "SACAR A ROSCA E AVALIAR PARTE QUE NÃO É POSSVEL AVALIAR PELA JANELA DE INSPEÇÃO VERIFICAÇÃO DO HELICOIDE LADO DO ACIONAMENTO/ VERIFICAR SE O HELICOIDE ESTA DESGASTADO E SE NECESSARIO USINAGEM OU NÃO  PARA GRANDE PARADA", "hh": 16, "qnt": "2", "exec": "CEZAR PRIMO / SANDRO SOTO", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 50, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7257309", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 03", "name": "ELEVADOR 2 DA MISTURA 3 - INSTALAR INVERSOR DE FREQUENCIA", "det": "INSTALAR INVERSOR DE FREQUENCIA NO ELEVADOR 2 DA MISTURA 3", "hh": 8, "qnt": "1", "exec": "GABRIEL NETO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 51, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258399", "plano": "N/A", "area": "FOSFATO", "equip": "FOSFATO", "name": "CAIXA DO FILTRO DOS SECADORES", "det": "CONTINUAÇÃO SOLDA NA CAIXA DOS FILTROS DO SECADORES", "hh": 20, "qnt": "2", "exec": "ALEX REBELO / DOUGLAS ARAUJO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 52, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7256493", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 03", "name": "1M-PREV MEC PALETIZADORA BEUMER M3", "det": "MANUTENÇÃO PREVENTIVA CONFORME PLANO", "hh": 10, "qnt": "2", "exec": "CHARLEY MARTINS / GUILHERME NASCIMENTO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 53, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7256494", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 03", "name": "1M-PREV ELET PALETIZADORA BEUMER M3", "det": "MANUTENÇÃO PREVENTIVA CONFORME PLANO", "hh": 4, "qnt": "1", "exec": "CHARLEY MARTINS", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 54, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258442", "plano": "N/A", "area": "ZOOTECNICA", "equip": "PREMIX", "name": "REVISÃO PREVENTIVA BLENDCOM E CILINDROS", "det": "MANUTENÇÃO PREVENTIVA DO CONE COM INSPEÇÃO E DESTRAVAMENTO DE CILINDROS", "hh": 16, "qnt": "2", "exec": "RAFAEL JOSE / MARCELO TEIXEIRA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 55, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258395", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 03", "name": "VAZAMENTO DE AR, NO ATUADOR DA VALVULA DE SAIDA DA BALANÇA 02 MISTURA 03", "det": "EFETUAR TROCA DA VÁLVULA - POSSIVEL TRABALHO A QUENTE DEVIDO OXIDAÇÃO NOS PARAFUSOS DE FIXAÇÃO - CÓDIGO DA VALVULA 3061054276", "hh": 6, "qnt": "1", "exec": "ITALO PINHEIRO", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 56, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258440", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 03", "name": "DESGRUMADOR ELEVADOR 01 DA 3", "det": "VERIFICAÇÃO DA GRELHA / ROTOR / ACIONAMENTO / LUBRIFICAÇÃO", "hh": 16, "qnt": "2", "exec": "EDILSON PEREIRA DA SILVA / CARLOS SANTOS", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 57, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7247337 / 7247338", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 4", "name": "PREVENTIVA MECANICA MAQUINA STRECH M4", "det": "MANUTENTENÇÃO E CORREÇÃO NO SISTEMA DE ALIMENTAÇÃO DO AR COMPRIMIDO DA MAQUINA DE STRECH, E MELHORAR O FLUXO DE AR DOS PISTÃO E DA BOLSA DE AR ABAIXO DA MESO.", "hh": 20, "qnt": "2", "exec": "LEONARDO OLIVEIRA / GABRIEL NETO", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 58, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258439", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "ROSCA DE SAIDA DO MISTURADOR", "det": "MANUTENÇÃO PREVENTIVA / INSPEÇÃO DO CONJUNTO MOTORREDUTOR/ HELICOIDE / ROLAMENTOS E LUBRIFICAÇÃO.", "hh": 10, "qnt": "1", "exec": "DANILO PEREIRA", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 59, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258438", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "ESTEIRAS MISTURA 01", "det": "REVISÃO DAS ESTEIRAS / INSPEÇÃO DE ACIONAMENTO/ ROLOS / LUBRIFICAÇÃO.", "hh": 10, "qnt": "2", "exec": "SALATIEL AMBROSIO / EDILSON PEREIRA DA SILVA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 60, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258401", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 4", "name": "REVISÃO E TESTES SENSORES DE NÍVEL DAS MOEGA - BICO 4 LINHA 2", "det": "VERIFICAÇÃO GERAL DOS SENSORES DAS LINHAS 01 E 02 E COREÇÃO DE DEEITO BICO 4 LINHA 2", "hh": 8, "qnt": "1", "exec": "ALDINEI PERTESON", "rec": "ESCADA", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 61, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258437", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 2", "name": "ROSCA INCLINADA DE SAIDA DO FORBERG M2", "det": "SANAR VAZAMENTO DE OLEO PELO RETENTOR", "hh": 10, "qnt": "1", "exec": "SANDRO SOTO", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 62, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258436", "plano": "N/A", "area": "ZOOTECNICA", "equip": "EXTRUSORA", "name": "REPOSIÇÃO DE CANECAS ELEVADOR DO SISTEMA DE MOAGEM DE MILHO", "det": "REPOR CANECAS SOLTAS QUE ESTÃO COM OPERAÇÃO", "hh": 20, "qnt": "2", "exec": "MARCELO TEIXEIRA / JOAO PEDRO", "rec": "", "ini": "2026-11-21", "fim": "2026-11-21"}, {"item": 63, "forn": "INTERNO", "pedido": "N/A", "tipo": "SHE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7251211", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "EXAUSTOR CARROSSEL", "name": "EXAUSTOR DO CARROSSEL PRECISA DE LIMPEZA- NECESSÁRIO DESMONTAGEM DO EQUIPAMENTO NA ÁREA EXTERNA PARA LIMPEZA, POIS ESTÁ VOLTANDO PÓ DA TUBULAÇÃO", "det": "1 - DESCONECTAR A TUBULAÇÃO DE SUCÇÃO E DE DESCARGA, SOLTAR A CORDOALHA DE ATERRAMENTO E A FIXAÇÃO NA BASE, E LEVAR O EXAUSTOR PARA A ÁREA EXTERNA.\n2 - DESMONTAR A CARCAÇA E O ROTOR E LIMPAR COM ESCOVA OU ASPIRADOR INDUSTRIAL. NÃO USAR AR COMPRIMIDO, PARA NÃO ESPALHAR O PÓ.\n3 - INSPECIONAR O ROTOR, AS PÁS, AS VEDAÇÕES E AS JUNTAS E SUBSTITUIR O QUE ESTIVER DANIFICADO. VERIFICAR TAMBÉM SE HÁ PÓ ACUMULADO NA TUBULAÇÃO E LIMPAR O TRECHO ANTES DE REMONTAR.", "hh": 3, "qnt": "1", "exec": "GIOVANI QUEIROZ", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 64, "forn": "INTERNO", "pedido": "N/A", "tipo": "SHE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258412", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "POLIVITAMINICOS", "name": "DESVIO N° 5 IGN: CHAPA DE METAL SEM CORDOALHA DE ATERRAMENTO.", "det": "IMPRIMIR FOTO JUNTO + IDENTIFICAR A CHAPA E O PONTO DE ATERRAMENTO MAIS PRÓXIMO (ESTRUTURA OU BARRAMENTO ATERRADO).\nLIXAR OS PONTOS DE CONTATO ATÉ O METAL FICAR LIMPO, SEM TINTA E SEM OXIDAÇÃO.\nINSTALAR A CORDOALHA COM TERMINAL, PARAFUSO E ARRUELA DENTADA, BEM APERTADOS.\nMEDIR A CONTINUIDADE (OHMÍMETRO), REGISTRAR O VALOR, RETIRAR O BLOQUEIO E ENCERRAR A PT.", "hh": 2, "qnt": "1", "exec": "DANILO PEREIRA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 65, "forn": "INTERNO", "pedido": "N/A", "tipo": "SHE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258414", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "CARROSSEL", "name": "REALIZAR UMA MEDIÇÃO NAS CORDOALHAS DE ATERRAMENTO DO BRAÇO QUE ESTAVA DESATIVADO DO CARROSSEL", "det": "IMPRIMIR FOTO JUNTO + FAZER A INSPEÇÃO VISUAL DAS CORDOALHAS: FIXAÇÃO, OXIDAÇÃO E FIOS ROMPIDOS.\nMEDIR A RESISTÊNCIA DE CADA CORDOALHA ATÉ O PONTO DE TERRA COM O MICROHMÍMETRO OU OHMÍMETRO.\nCOMPARAR COM O LIMITE DE REFERÊNCIA CASO NECESSARIO SEGUIR COM A TROCA", "hh": 2, "qnt": "1", "exec": "DANILO PEREIRA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 66, "forn": "INTERNO", "pedido": "N/A", "tipo": "SHE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258415", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "SUFURLINE CARROSEL", "name": "RECIPIENTE DE COLETA DE PÓ ABAIXO DO FILTRO DEVERÁ ESTAR ATERRADO- SUFURLINE CARROSSEL", "det": "IMPRIMIR FOTO JUNTO + DEFINIR O PONTO DE ATERRAMENTO NO RECIPIENTE E NA ESTRUTURA ATERRADA DO FILTRO.\nLIMPAR OS PONTOS DE CONTATO E INSTALAR A CORDOALHA OU O GRAMPO DE ATERRAMENTO.\nMEDIR A CONTINUIDADE ENTRE O RECIPIENTE E A TERRA E REGISTRAR O VALOR.", "hh": 3, "qnt": "1", "exec": "GIOVANI QUEIROZ", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 67, "forn": "INTERNO", "pedido": "N/A", "tipo": "PREVENTIVA", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258423", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 4", "name": "ESTEIRAS DE ROLETE BEUMER 4", "det": "EFETUAR LIMPEZA E LUBRIFICAÇÃO E INSPEÇÃO GERAL DOS ROLOS E CORRENTES", "hh": 20, "qnt": "2", "exec": "LUBRIN", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 68, "forn": "INTERNO", "pedido": "N/A", "tipo": "SHE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7254222", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "HAVER", "name": "IGN:LOCAL/EQUIPAMENTO: MOEGA ACIMA DA HAVER", "det": "IMPRIMIR FOTO JUNTO + INSPECIONAR O ATERRAMENTO DA MOEGA E DAS CONEXÕES (FLANGES, DUTOS E FUNIL), PROCURANDO CORDOALHA FALTANTE, SOLTA OU DANIFICADA.\nINSTALAR OU SUBSTITUIR AS CORDOALHAS NOS PONTOS IRREGULARES, COM O CONTATO LIMPO E BEM APERTADO.\nMEDIR A CONTINUIDADE DE TODOS OS PONTOS ATÉ A TERRA E REGISTRAR OS VALORES.", "hh": 3, "qnt": "1", "exec": "DANILO PEREIRA", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 69, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7254256", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MISTURA 01", "name": "IGN- FIAÇÃO EXPOSTAS NAS BALANÇA M1", "det": "IMPRIMIR FOTO JUNTO", "hh": 3, "qnt": "1", "exec": "ALDINEI PERTESON", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 70, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7257755", "plano": "N/A", "area": "ZOOTECNICA", "equip": "MOINHO 100A", "name": "IGN-CORRIGIR FALHA DETECTOR METAL 100A.", "det": "IMPRIMIR FOTO JUNTO", "hh": 3, "qnt": "1", "exec": "ALDINEI PERTESON", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 71, "forn": "INTERNO", "pedido": "N/A", "tipo": "SHE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7257833", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "POLIVITAMINICOS", "name": "IGN FALTA DE CABO DE ATERRAMENTO FUNIL", "det": "IMPRIMIR FOTO JUNTO + DEFINIR O TRAJETO DO CABO DO FUNIL ATÉ O PONTO DE TERRA DA ESTRUTURA.\nLIXAR OS PONTOS DE CONTATO E FIXAR O CABO OU A CORDOALHA COM TERMINAL E ARRUELA DENTADA.\nMEDIR A CONTINUIDADE ENTRE O FUNIL E A TERRA E REGISTRAR O VALOR.", "hh": 3, "qnt": "1", "exec": "DANILO PEREIRA", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 72, "forn": "INTERNO", "pedido": "N/A", "tipo": "PREVENTIVA", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258421", "plano": "N/A", "area": "APOLLO", "equip": "SENSOR LSHH", "name": "SENSOR HH TQ ACIDO SD EM FALHA", "det": "VERIFICAÇÃO CONEXÕES E ELETRICA DO SENSOR, LIMPEZA DO SENSOR", "hh": 4, "qnt": "1", "exec": "DANILO PEREIRA", "rec": "", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 73, "forn": "INTERNO", "pedido": "N/A", "tipo": "PREVENTIVA", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258418", "plano": "N/A", "area": "TM FORBERG", "equip": "EXAUSTOR TM FORBERG", "name": "FALTA DE BONDINGS DUTOS EXAUSTOR TM", "det": "IMPRIMIR FOTO JUNTO", "hh": 3, "qnt": "1", "exec": "ALDINEI PERTESON", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 74, "forn": "INTERNO", "pedido": "N/A", "tipo": "PREVENTIVA", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258419", "plano": "N/A", "area": "TM FORBERG", "equip": "FILTROS TM FORBERG", "name": "CORDOALHAS FROUXA NOS FILTROS FORBERG TM", "det": "IMPRIMIR FOTO JUNTO", "hh": 3, "qnt": "1", "exec": "ALDINEI PERTESON", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 75, "forn": "INTERNO", "pedido": "N/A", "tipo": "PREVENTIVA", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258420", "plano": "N/A", "area": "TM FORBERG", "equip": "FORBERG 2", "name": "TOMADA NÃO ATEX EXAUSTOR FORBERG 2", "det": "IMPRIMIR FOTO JUNTO", "hh": 3, "qnt": "1", "exec": "ALDINEI PERTESON", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 76, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "7258416", "plano": "N/A", "area": "ZOOTECNICA", "equip": "ELEVADOR 2 M2", "name": "IGN- CABO ATERRAMENTO ELEVADOR 3 M2", "det": "IMPRIMIR FOTO JUNTO", "hh": 3, "qnt": "1", "exec": "ALDINEI PERTESON", "rec": "", "ini": "2026-11-18", "fim": "2026-11-18"}, {"item": 77, "forn": "INTERNO", "pedido": "N/A", "tipo": "PREVENTIVA", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258422", "plano": "N/A", "area": "APOLLO", "equip": "MANGOTE APOLLO", "name": "AUSÊNCIA DE CUPILHAS NAS CONEXÕES", "det": "IMPRIMIR FOTO JUNTO + 1. MAPEAR TODAS AS CONEXÕES SEM CUPILHA (PINOS, PORCAS CASTELO E ARTICULAÇÕES) E DEFINIR A BITOLA DE CADA UMA.\n2. CONFERIR O APERTO DAS PORCAS E O ESTADO DOS PINOS E SUBSTITUIR OS QUE ESTIVEREM GASTOS.\n3. INSTALAR CUPILHAS NOVAS DE AÇO INOX NA BITOLA CORRETA E DOBRAR AS PERNAS. NÃO REAPROVEITAR CUPILHA USADA.", "hh": 2, "qnt": "1", "exec": "DANILO PEREIRA", "rec": "", "ini": "2026-11-20", "fim": "2026-11-20"}, {"item": 78, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258417", "plano": "N/A", "area": "ZOOTECNICA", "equip": "PAYPER 3 M4", "name": "2. CONFERIR O APERTO DAS PORCAS E O ESTADO DOS PINOS E SUBSTITUIR OS QUE ESTIVEREM GASTOS.", "det": "SOLDAR TUBULAÇÃO DE RETORNO DO BICO 1 DA PAYPER - TRABALHO A QUENTE", "hh": 3, "qnt": "1", "exec": "CLECIO NAZIAZENO", "rec": "ESCADA", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 79, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258441", "plano": "N/A", "area": "ZOOTECNICA", "equip": "BALANÇA 2 M2", "name": "REVISÃO POIS ESTA COM DESVIO DE QUALIDADE", "det": "", "hh": 8, "qnt": "1", "exec": "LEONARDO OLIVEIRA", "rec": "", "ini": "2026-11-21", "fim": "2026-11-21"}, {"item": 80, "forn": "INTERNO", "pedido": "", "tipo": "PERFORMANCE", "lider": "BRUNA GARFEM", "turno": "1", "ptw": "", "ordem": "7258430", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "SILO 408", "name": "TRANSFERENCIA DE ABASTECIMENTO DE FILITO PARA SILO 408", "det": "FAZER O BLOQUEIO LOTO DA LINHA DE TRANSPORTE E DA VÁLVULA DESVIADORA. ESVAZIAR E PURGAR A LINHA.\nDESCONECTAR A LINHA DO PONTO ATUAL E POSICIONAR O TRECHO OU A CONEXÃO PARA O SILO 408, ALINHANDO FLANGES E SUPORTES.\nFAZER A CONEXÃO NO SILO 408 COM JUNTAS NOVAS E ABRAÇADEIRAS BEM APERTADAS. INSTALAR AS CORDOALHAS DE ATERRAMENTO NOS FLANGES.\nCONFERIR A CAPACIDADE DO SILO 408, O FILTRO E O ALÍVIO (VENT/PRV) E AJUSTAR A POSIÇÃO DA DESVIADORA PARA O NOVO DESTINO.\nRETIRAR O BLOQUEIO E TESTAR O TRANSPORTE, VERIFICANDO SE HÁ VAZAMENTO", "hh": 16, "qnt": "2", "exec": "ALEX REBELO / CLECIO NAZIAZENO", "rec": "", "ini": "2026-11-20", "fim": "2026-11-21"}, {"item": 81, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL GALLY", "turno": "3", "ptw": "", "ordem": "7258431", "plano": "N/A", "area": "POLIVITAMINICOS", "equip": "LINHA DE PREMIX", "name": "LINHA DE PREMIX RETIRADA DE PALIATIVO FURO EM LINHA DESVIADORA", "det": "FAZER O BLOQUEIO LOTO DA LINHA E DA DESVIADORA, ESVAZIAR A LINHA E LIMPAR O PÓ DA REGIÃO.\nRETIRAR O PALIATIVO (FITA, ABRAÇADEIRA OU REMENDO) E AVALIAR O TAMANHO DO FURO E A ESPESSURA DA PAREDE AO REDOR.\nFAZER O REPARO DEFINITIVO: SOLDAR UM REFORÇO OU SUBSTITUIR O TRECHO OU A PEÇA DA DESVIADORA, CONFORME O DESGASTE.\nREINSTALAR COM JUNTAS NOVAS E RECONECTAR AS CORDOALHAS DE ATERRAMENTO. MEDIR A CONTINUIDADE ATÉ A TERRA.\nRETIRAR O BLOQUEIO, TESTAR O TRANSPORTE SEM VAZAMENTO", "hh": 4, "qnt": "1", "exec": "GIOVANI QUEIROZ", "rec": "ANDAIME", "ini": "2026-11-19", "fim": "2026-11-19"}, {"item": 82, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "RAFAEL SCOCCA", "turno": "1", "ptw": "", "ordem": "7258399", "plano": "N/A", "area": "FOSFATO", "equip": "FOSFATO", "name": "CAIXA DO FILTRO DOS SECADORES", "det": "CONTINUAÇÃO SOLDA NA CAIXA DOS FILTROS DO SECADORES", "hh": 10, "qnt": "2", "exec": "ALEX REBELO / DOUGLAS RODRIGO", "rec": "", "ini": "2026-11-23", "fim": "2026-11-23"}, {"item": 83, "forn": "INTERNO", "pedido": "N/A", "tipo": "PERFORMANCE", "lider": "MARCOS BORODIAK", "turno": "2", "ptw": "", "ordem": "NA", "plano": "N/A", "area": "ZOOTECNICA", "equip": "ZOOTECNICA", "name": "COMISSIONAMENTO ZOOTECNICA AS 19:00", "det": "", "hh": 0, "qnt": "", "exec": "", "rec": "", "ini": "2026-11-22", "fim": "2026-11-22"}]</script>
 <script>
 /* ===================== utilidades ===================== */
 const $=s=>document.querySelector(s);
-const KEY='execucao_paradas_v1';
+const KEY='inventario2026_v1',WHO_KEY='inventario2026_who';
+const DIAS=['dom','seg','ter','qua','qui','sex','sáb'];
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function norm(s){return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
-function uid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function norm(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim()}
+function clean(s){return String(s==null?'':s).replace(/\s+/g,' ').trim()}
 function pad(n){return String(n).padStart(2,'0')}
-function toLocalInput(ms){
-  const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function fromLocalInput(v){const n=v?new Date(v).getTime():NaN;return Number.isFinite(n)?n:null}
-function datePart(ms){const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
-function timePart(ms){const d=new Date(ms);return `${pad(d.getHours())}:${pad(d.getMinutes())}`}
-function fromParts(date,time){return date&&time?fromLocalInput(`${date}T${time}`):null}
-const DT_MIN=Date.UTC(2000,0,1),DT_MAX=Date.UTC(2100,0,1);
-function validDt(v){return v!=null&&v!==''&&Number.isFinite(+v)&&+v>=DT_MIN&&+v<=DT_MAX}
-function taskDts(s){return (s.tasks||[]).filter(t=>validDt(t.dt))}
-function referenceTime(s){const d=taskDts(s).map(t=>+t.dt);return d.length?Math.max(...d):stopStart(s)}
-function curvePoints(s){
-  // Curva S real: em cada data/hora lançada numa atividade, soma o % de todas as
-  // atividades já lançadas até aquele momento e divide pelo total de atividades.
-  const all=s.tasks||[],n=all.length||1,dated=taskDts(s).slice().sort((a,b)=>+a.dt-+b.dt);
-  const pts=[];let acc=0;
-  for(let i=0;i<dated.length;i++){
-    acc+=clamp(+dated[i].pct||0,0,100);
-    const t=+dated[i].dt;
-    const q={t,pct:acc/n};
-    if(pts.length&&pts[pts.length-1].t===t)pts[pts.length-1]=q;else pts.push(q);
-  }
-  return pts;
-}
-function fmtDate(k){const m=String(k||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}/${m[1]}`:''}
-function smoothstep(t){return t*t*(3-2*t)}
 function clamp(v,a,b){return Math.min(b,Math.max(a,v))}
+function hashId(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return 'a'+h.toString(36)}
+function uid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function dayMs(k){const [y,m,d]=String(k).split('-').map(Number);return new Date(y,m-1,d).getTime()}
+function keyOf(ms){const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function fmtDate(k){const m=String(k||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}`:''}
+function fmtDay(k){return `${fmtDate(k)} ${DIAS[new Date(dayMs(k)).getDay()]}`}
+function fmtDT(ms){const d=new Date(ms);return `${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`}
+function todayKey(){return keyOf(Date.now())}
 function dateKey(v){
   if(v==null||v==='')return '';
-  if(v instanceof Date&&!isNaN(v))return `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}`;
-  if(typeof v==='number'){
-    if(v>20000&&v<80000){const d=new Date(Math.floor(v-25569)*864e5);return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`}
-    return '';
-  }
+  if(v instanceof Date&&!isNaN(v))return keyOf(v.getTime());
+  if(typeof v==='number'){if(v>20000&&v<80000){const d=new Date(Math.round((v-25569)*864e5));return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`}return ''}
   const s=String(v).trim();
   let m=s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);if(m)return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
   m=s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/);if(m){let y=m[3];if(y.length===2)y='20'+y;return `${y}-${pad(m[2])}-${pad(m[1])}`}
@@ -204,587 +256,473 @@ function dateKey(v){
 }
 
 /* ===================== dados ===================== */
-let DB={stops:[],sel:''};
-try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&Array.isArray(r.stops))DB=r}catch(e){}
-function save(){
-  try{localStorage.setItem(KEY,JSON.stringify(DB))}
-  catch(e){if(!window.__avisoSt){window.__avisoSt=1;alert('Armazenamento local cheio (muitas fotos). Faça o backup e remova fotos antigas.')}}
-  if(window.__firebaseSave) window.__firebaseSave(DB);
-}
-function cur(){return DB.stops.find(s=>s.id===DB.sel)||DB.stops[0]||null}
-
-/* ===================== cronograma da parada ===================== */
-function stopStart(s){
-  const [y,m,d]=String(s.date).split('-').map(Number);
-  const [hh,mm]=String(s.start||'07:00').split(':').map(Number);
-  return new Date(y,m-1,d,hh||0,mm||0).getTime();
-}
-function stopEnd(s){return stopStart(s)+Math.max(0.5,+s.hours||8)*36e5}
-function stopEndKey(s){return dateKey(new Date(stopEnd(s)-1))}
-function overall(s){const t=s.tasks||[];return t.length?t.reduce((a,x)=>a+(+x.pct||0),0)/t.length:0}
-function plannedAt(s,t){const st=stopStart(s),en=stopEnd(s);return smoothstep(clamp((t-st)/(en-st),0,1))*100}
-
-/* ===================== curva S ===================== */
-function drawChart(s){
-  const svg=$('#chart');if(!svg)return;
-  svg.innerHTML=chartInner(s);
-}
-function chartInner(s){
-  const W=640,H=260,L=42,R=18,T=14,B=38;
-  const st=stopStart(s),en=stopEnd(s),reference=referenceTime(s);
-  const hist=curvePoints(s);
-  const axisStart=Math.min(st,...hist.map(p=>p.t));
-  const axisEnd=Math.max(en,reference,...hist.map(p=>p.t));
-  const span=Math.max(1,axisEnd-axisStart);
-  const X=t=>L+(clamp(t,axisStart,axisEnd)-axisStart)/span*(W-L-R);
-  const Y=v=>H-B-(clamp(v,0,100)/100)*(H-T-B);
-  let g='';
-  for(let i=0;i<=4;i++){const y=Y(i*25);g+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--border)"/><text x="${L-6}" y="${y+4}" font-size="11" text-anchor="end" fill="var(--muted)">${i*25}%</text>`}
-  const hrs=span/36e5,steps=[0.5,1,2,3,4,6,12,24,48,72,168];
-  const step=steps.find(x=>hrs/x<=8)||168;
-  const tickStart=Math.ceil(axisStart/(step*36e5))*(step*36e5);
-  for(let t=tickStart,nt=0;t<=axisEnd&&nt<40;t+=step*36e5,nt++){
-    const d=new Date(t),x=X(t);
-    const lab=hrs<=30?`${pad(d.getHours())}:${pad(d.getMinutes())}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}h`;
-    g+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${H-B}" stroke="var(--border)" stroke-dasharray="2,4"/><text x="${x}" y="${H-B+16}" font-size="11" text-anchor="middle" fill="var(--muted)">${lab}</text>`;
-  }
-  let pp='';
-  for(let i=0;i<=80;i++){
-    const t=axisStart+i/80*span;
-    pp+=(i?'L':'M')+X(t).toFixed(1)+','+Y(plannedAt(s,t)).toFixed(1)+' ';
-  }
-  const points=[{t:st,pct:0},...hist.map(p=>({t:+p.t,pct:clamp(+p.pct||0,0,100)}))];
-  const clean=[];
-  for(const p of points){
-    const q={x:X(p.t),y:Y(p.pct)};
-    if(!clean.length||q.x>clean[clean.length-1].x+0.5)clean.push(q);
-    else clean[clean.length-1]=q;
-  }
-  let rp='';
-  if(clean.length===1)rp=`M${clean[0].x.toFixed(1)},${clean[0].y.toFixed(1)}`;
-  else if(clean.length>1){
-    rp=`M${clean[0].x.toFixed(1)},${clean[0].y.toFixed(1)}`;
-    for(let i=0;i<clean.length-1;i++){
-      const a=clean[i],b=clean[i+1],prev=clean[Math.max(0,i-1)],next=clean[Math.min(clean.length-1,i+2)];
-      const dx=(b.x-a.x)/3;
-      const c1y=a.y+(b.y-prev.y)/6,c2y=b.y-(next.y-a.y)/6;
-      rp+=` C${(a.x+dx).toFixed(1)},${c1y.toFixed(1)} ${(b.x-dx).toFixed(1)},${c2y.toFixed(1)} ${b.x.toFixed(1)},${b.y.toFixed(1)}`;
-    }
-  }
-  const lastP=clean[clean.length-1]||{x:X(st),y:Y(0)};
-  const referenceLine=`<line x1="${X(reference)}" y1="${T}" x2="${X(reference)}" y2="${H-B}" stroke="var(--dsm-purple)" stroke-dasharray="3,3"/><text x="${X(reference)}" y="${T+10}" font-size="10" text-anchor="middle" fill="var(--dsm-purple)">último lançamento</text>`;
-  return g+referenceLine+
-    `<path d="${pp}" fill="none" stroke="var(--planned)" stroke-width="2.2" stroke-dasharray="5,4"/>`+
-    `<path d="${rp}" fill="none" stroke="var(--actual)" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>`+
-    `<circle cx="${lastP.x}" cy="${lastP.y}" r="4.5" fill="var(--actual)"/>`;
-}
-function statusPrazo(s,agora=referenceTime(s)){
-  const tarefas=s.tasks||[],real=overall(s),plan=plannedAt(s,agora),desvio=real-plan;
-  const inicio=stopStart(s),fim=stopEnd(s);
-  if(tarefas.length&&tarefas.every(t=>(+t.pct||0)>=100))
-    return {label:'Concluída',cor:'var(--dsm-green)',fundo:'#173D28',icone:'✓',detalhe:'Todas as atividades concluídas'};
-  if(agora<inicio)
-    return {label:'Programada',cor:'var(--muted)',fundo:'var(--bg)',icone:'○',detalhe:'Aguardando início da parada'};
-  if(agora>fim)
-    return {label:'Atrasado',cor:'#F87171',fundo:'#4A2020',icone:'!',detalhe:'Prazo final ultrapassado'};
-  if(desvio>=-0.05)
-    return {label:'Dentro do prazo',cor:'#4ADE80',fundo:'#173D28',icone:'✓',detalhe:'Real acompanhando o planejado'};
-  if(desvio>=-10)
-    return {label:'Atenção',cor:'#FBBF24',fundo:'#493719',icone:'!',detalhe:`Desvio de ${desvio.toFixed(1)} p.p.`};
-  return {label:'Atrasado',cor:'#F87171',fundo:'#4A2020',icone:'!',detalhe:`Desvio de ${desvio.toFixed(1)} p.p.`};
-}
-function cardsHtml(s){
-  const real=overall(s),plan=plannedAt(s,referenceTime(s)),dev=real-plan;
-  const n=(s.tasks||[]).length,ok=(s.tasks||[]).filter(t=>t.pct>=100).length;
-  const sign=dev>=0?'+':'';
-  const status=statusPrazo(s);
-  return `<div class="card"><b>${real.toFixed(1)}%</b><span>Avanço real</span></div>
-  <div class="card"><b>${plan.toFixed(1)}%</b><span>Planejado até agora</span></div>
-  <div class="card"><b style="color:${dev>=-0.05?'var(--dsm-green)':'#c0392b'}">${sign}${dev.toFixed(1)} p.p.</b><span>Desvio (real − planejado)</span></div>
-  <div class="card"><b>${ok}/${n}</b><span>Atividades concluídas</span></div>
-  <div class="card" style="border-top-color:${status.cor}"><b style="font-size:16px;color:${status.cor};display:flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${status.fundo};color:${status.cor};font-size:14px">${status.icone}</span>${status.label}</b><span>Status da parada · ${status.detalhe}</span></div>`;
-}
-
-function dtInfoText(s){
-  const tk=s.tasks||[],com=taskDts(s).length;
-  const semDt=tk.filter(t=>(+t.pct||0)>0&&!validDt(t.dt)).length;
-  let m=`${com} de ${tk.length} atividades com data/hora lançada.`;
-  if(semDt)m+=` ⚠ ${semDt} com % mas sem data/hora (fora da curva).`;
-  const r=referenceTime(s);m+=com?` Último lançamento: ${new Date(r).toLocaleString('pt-BR')}.`:' Nenhum lançamento ainda — usando o início da parada como referência.';
-  return m;
-}
-function updateLive(){
-  const s=cur();if(!s)return;
-  const di=$('#dtInfo');if(di)di.innerHTML=dtInfoText(s);
-  const c=$('#liveCards');if(c)c.innerHTML=cardsHtml(s);
-  const pb=$('#liveBar');if(pb)pb.style.width=overall(s).toFixed(1)+'%';
-  drawChart(s);
-  renderStopsList();
-}
-
-/* ===================== execução ===================== */
-function filtradas(s){
-  const f=$('#fStatus').value,q=norm($('#busca').value);
-  return (s.tasks||[]).filter(t=>{
-    if(f==='pend'&&t.pct>0)return false;
-    if(f==='and'&&!(t.pct>0&&t.pct<100))return false;
-    if(f==='ok'&&t.pct<100)return false;
-    if(q&&!norm([t.ordem,t.name,t.crit,t.local,t.team,t.obs,t.acao].join(' ')).includes(q))return false;
-    return true;
+// chave estável da atividade: ordem + descrição + equipamento (+ nº da repetição)
+function withKeys(rows){
+  const cnt={};
+  return rows.map(r=>{
+    const base=norm([r.ordem,r.name,r.equip].join('|'));
+    cnt[base]=(cnt[base]||0)+1;
+    const key=base+'#'+cnt[base];
+    return {...r,key,id:hashId(key)};
   });
 }
-function hasDt(t){return validDt(t.dt)}
+function newTask(r){return {id:r.id,key:r.key,item:r.item??'',forn:r.forn||'',pedido:r.pedido||'',tipo:r.tipo||'',lider:clean(r.lider),turno:r.turno||'',ptw:r.ptw||'',ordem:r.ordem||'',plano:r.plano||'',area:clean(r.area),equip:r.equip||'',name:r.name,det:r.det||'',hh:+r.hh||0,qnt:r.qnt||'',exec:r.exec||'',rec:r.rec||'',ini:r.ini,fim:r.fim||r.ini,pct:0,hist:[],upd:null,updBy:'',obs:'',acao:'',foto:null,manual:!!r.manual}}
+
+let DB={tasks:[]};
+try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&Array.isArray(r.tasks))DB=r}catch(e){}
+if(!DB.tasks.length){
+  try{DB.tasks=withKeys(JSON.parse($('#seed').textContent)).map(newTask)}catch(e){console.error(e)}
+}
+const dirty=new Set();
+function persistLocal(){
+  try{localStorage.setItem(KEY,JSON.stringify(DB))}
+  catch(e){if(!window.__avisoSt){window.__avisoSt=1;alert('Armazenamento do navegador cheio (muitas fotos). Faça o backup e remova fotos antigas.')}}
+}
+function save(ids){
+  (ids||[]).forEach(i=>dirty.add(i));
+  persistLocal();
+  if(window.__fbFlush)window.__fbFlush();
+}
+function byId(id){return DB.tasks.find(t=>t.id===id)}
+
+/* ===================== filtros ===================== */
+const F={lider:'',dia:'',area:''};
+function eqN(a,b){return norm(a)===norm(b)}
+function inDay(t,k){return t.ini<=k&&(t.fim||t.ini)>=k}
+function filtered(){
+  return DB.tasks.filter(t=>(!F.lider||eqN(t.lider,F.lider))&&(!F.area||eqN(t.area,F.area))&&(!F.dia||inDay(t,F.dia)));
+}
+function allDays(tasks){
+  const set=new Set();
+  for(const t of tasks){let k=t.ini;const f=t.fim||t.ini;let g=0;while(k<=f&&g<60){set.add(k);k=keyOf(dayMs(k)+36e5*30);g++}}
+  return [...set].sort();
+}
+function uniq(a){const m=new Map();for(const v of a){const c=clean(v);if(c&&!m.has(norm(c)))m.set(norm(c),c)}return [...m.values()].sort()}
+function setOpts(sel,html,val){if(sel.dataset.h!==html){sel.innerHTML=html;sel.dataset.h=html}const o=[...sel.options].find(x=>norm(x.value)===norm(val));sel.value=o?o.value:''}
+function fillFilters(){
+  const lid=uniq(DB.tasks.map(t=>t.lider));
+  const ar=uniq(DB.tasks.map(t=>t.area));
+  const dd=allDays(DB.tasks);
+  setOpts($('#fLider'),'<option value="">Todos os líderes</option>'+lid.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join(''),F.lider);
+  setOpts($('#fArea'),'<option value="">Todas as áreas</option>'+ar.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join(''),F.area);
+  setOpts($('#fDia'),'<option value="">Todos os dias</option>'+dd.map(k=>`<option value="${k}">${fmtDay(k)}${k===todayKey()?' (hoje)':''}</option>`).join(''),F.dia);
+  $('#lideresList').innerHTML=lid.map(l=>`<option value="${esc(l)}">`).join('');
+  $('#areasList').innerHTML=ar.map(l=>`<option value="${esc(l)}">`).join('');
+  const who=localStorage.getItem(WHO_KEY)||'';
+  setOpts($('#whoSel'),'<option value="">— escolha seu nome —</option>'+lid.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('')+'<option value="PPCM">PPCM / Planejamento (ver todos)</option>',who);
+  if(dd.length)$('#subInfo').firstChild&&($('#subInfo').childNodes[0].textContent=`Parada de Manutenção · Mairinque · ${fmtDate(dd[0])} a ${fmtDate(dd[dd.length-1])} · ${DB.tasks.length} atividades`);
+}
+function setF(k,v){F[k]=v;$('#f'+k[0].toUpperCase()+k.slice(1)).value=v;renderAll()}
+$('#fLider').onchange=e=>setF('lider',e.target.value);
+$('#fDia').onchange=e=>setF('dia',e.target.value);
+$('#fArea').onchange=e=>setF('area',e.target.value);
+$('#clearF').onclick=()=>{F.lider=F.dia=F.area='';fillFilters();renderAll()};
+
+/* ===================== planejado x real ===================== */
+// Janela planejada da atividade: do início do dia "Data início" até o fim do dia "Data fim".
+// Se o filtro de dia estiver ativo, a janela é recortada para aquele dia.
+function win(t){
+  let a=dayMs(t.ini),b=dayMs(t.fim||t.ini)+864e5;
+  if(F.dia){a=Math.max(a,dayMs(F.dia));b=Math.min(b,dayMs(F.dia)+864e5)}
+  return [a,b];
+}
+function plannedAt(tasks,T){
+  if(!tasks.length)return 0;
+  let s=0;for(const t of tasks){const [a,b]=win(t);s+=clamp((T-a)/(b-a),0,1)}
+  return s/tasks.length*100;
+}
+// % de uma atividade em um instante, pelo histórico de lançamentos
+function pctAt(t,T){let p=0;for(const h of (t.hist||[]))if(h.t<=T)p=h.p;else break;return p}
+function realNow(tasks){return tasks.length?tasks.reduce((a,t)=>a+(+t.pct||0),0)/tasks.length:0}
+function realSeries(tasks){
+  const n=tasks.length||1,cur=new Map(),ev=[];
+  for(const t of tasks)for(const h of (t.hist||[]))ev.push({t:h.t,id:t.id,p:h.p});
+  ev.sort((a,b)=>a.t-b.t);
+  const pts=[];let sum=0;
+  for(const e of ev){sum+=e.p-(cur.get(e.id)||0);cur.set(e.id,e.p);const v=sum/n;
+    if(pts.length&&pts[pts.length-1].t===e.t)pts[pts.length-1].v=v;else pts.push({t:e.t,v})}
+  return pts;
+}
+function range(tasks){
+  if(!tasks.length){const d=dayMs(todayKey());return [d,d+864e5]}
+  let a=Infinity,b=-Infinity;for(const t of tasks){const w=win(t);a=Math.min(a,w[0]);b=Math.max(b,w[1])}
+  return [a,b];
+}
+function stAtv(t){
+  const p=+t.pct||0,h=todayKey();
+  if(p>=100)return {k:'ok',txt:'Concluída',cor:'#5bb947'};
+  if((t.fim||t.ini)<h)return {k:'late',txt:'Atrasada',cor:'#d64545'};
+  if(p>0)return {k:'and',txt:'Em andamento',cor:'#f5a01a'};
+  if(t.ini<=h)return {k:'hoje',txt:'Programada p/ hoje',cor:'#1ea7e1'};
+  return {k:'prog',txt:'Programada',cor:'#6b7280'};
+}
+function endOf(k){return dayMs(k)+864e5}
+function metaHoje(tasks){return plannedAt(tasks,endOf(todayKey()))}   // tudo programado até o fim de hoje
+function metaOntem(tasks){return plannedAt(tasks,dayMs(todayKey()))}  // tudo programado até o fim de ontem
+function status(tasks){
+  if(!tasks.length)return {label:'Sem atividades',cor:'#6b7280',det:''};
+  const [a]=range(tasks),real=realNow(tasks),ont=metaOntem(tasks),hoje=metaHoje(tasks);
+  if(tasks.every(t=>(+t.pct||0)>=100))return {label:'Concluído',cor:'#5bb947',det:'Todas as atividades concluídas'};
+  if(dayMs(todayKey())+864e5<=a)return {label:'Programado',cor:'#6b7280',det:'Ainda não começou'};
+  if(real>=hoje-0.05)return {label:'Meta do dia batida',cor:'#5bb947',det:'Tudo o que era até hoje foi feito'};
+  const gap=ont-real;
+  if(gap<=0.05)return {label:'No prazo',cor:'#5bb947',det:'Dias anteriores em dia · executando o de hoje'};
+  if(gap<=10)return {label:'Atenção',cor:'#e0a100',det:`${gap.toFixed(1)} p.p. abaixo do planejado até ontem`};
+  return {label:'Atrasado',cor:'#d64545',det:`${gap.toFixed(1)} p.p. abaixo do planejado até ontem`};
+}
+
+/* ===================== curva S ===================== */
+function chartInner(tasks){
+  const W=700,H=280,L=44,R=40,T=16,B=40;
+  const [a,b]=range(tasks),span=Math.max(1,b-a),hk=todayKey();
+  const X=t=>L+(clamp(t,a,b)-a)/span*(W-L-R),Y=v=>H-B-(clamp(v,0,100)/100)*(H-T-B);
+  let g='';
+  for(let i=0;i<=4;i++){const y=Y(i*25);g+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--border)"/><text x="${L-6}" y="${y+4}" font-size="11" text-anchor="end" fill="var(--muted)">${i*25}%</text>`}
+  // fronteiras dos dias
+  const bounds=[a];for(let t=endOf(keyOf(a));t<b;t=endOf(keyOf(t+36e5)))bounds.push(t);bounds.push(b);
+  for(let i=0;i<bounds.length-1;i++){const t0=bounds[i],t1=bounds[i+1],k=keyOf(t0+36e5),mid=X((t0+t1)/2),cur=k===hk;
+    if(cur)g+=`<rect x="${X(t0)}" y="${T}" width="${X(t1)-X(t0)}" height="${H-T-B}" fill="var(--dsm-orange)" opacity=".07"/>`;
+    g+=`<line x1="${X(t1)}" y1="${T}" x2="${X(t1)}" y2="${H-B}" stroke="var(--border)" stroke-dasharray="2,4"/>`+
+       `<text x="${mid}" y="${H-B+16}" font-size="11" text-anchor="middle" fill="var(--muted)" font-weight="${cur?'700':'400'}">${fmtDate(k)}</text><text x="${mid}" y="${H-B+29}" font-size="10" text-anchor="middle" fill="var(--muted)">${DIAS[new Date(dayMs(k)).getDay()]}${cur?' · hoje':''}</text>`}
+  // planejado: acumulado no fim de cada dia (datas de início e fim)
+  const pl=bounds.map(t=>({x:X(t),y:Y(plannedAt(tasks,t)),v:plannedAt(tasks,t)}));
+  let pp=pl.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  // real: o % lançado conta no dia programado da atividade (datas de início e fim),
+  // não no dia em que o líder atualizou. Em cada dia já passado, a atividade entra com
+  // o % atual limitado ao que estava previsto para ela até aquele dia; hoje mostra o total.
+  const n=tasks.length||1,todayEnd=endOf(hk),rl=[];
+  for(const t of bounds){
+    if(t>b||(t>todayEnd))break;
+    let v;
+    if(t===bounds[0])v=0;
+    else if(t>=todayEnd||t===b&&b<=todayEnd&&t===bounds[bounds.length-1]&&t>Date.now())v=realNow(tasks);
+    else v=tasks.reduce((s2,x)=>{const [w0,w1]=win(x);return s2+Math.min(+x.pct||0,clamp((t-w0)/(w1-w0),0,1)*100)},0)/n;
+    rl.push({x:X(t),y:Y(v),v});
+  }
+  const rp=rl.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  const dots=(arr,c,lab)=>arr.slice(1).map(p=>`<circle cx="${p.x}" cy="${p.y}" r="${lab?4:3}" fill="${c}"/>`+(lab?`<text x="${p.x}" y="${p.y-8}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${c}">${p.v.toFixed(0)}%</text>`:'')).join('');
+  return g+`<path d="${pp}" fill="none" stroke="var(--planned)" stroke-width="2.2" stroke-dasharray="6,4"/>`+dots(pl,'var(--planned)',false)+
+    (rl.length>1?`<path d="${rp}" fill="none" stroke="var(--actual)" stroke-width="2.8" stroke-linejoin="round"/>`+dots(rl,'var(--actual)',true):'');
+}
+function filtText(){
+  const p=[];if(F.lider)p.push('Líder: '+F.lider);if(F.dia)p.push('Dia: '+fmtDay(F.dia));if(F.area)p.push('Área: '+F.area);
+  return p.length?p.join(' · '):'Todas as atividades do inventário';
+}
+
+/* ===================== painel ===================== */
+function renderPainel(){
+  const tk=filtered(),real=realNow(tk),plan=metaHoje(tk),falta=Math.max(0,plan-real),st=status(tk);
+  const ok=tk.filter(t=>t.pct>=100).length,late=tk.filter(t=>stAtv(t).k==='late').length;
+  $('#cards').innerHTML=`
+    <div class="card"><b>${real.toFixed(1)}%</b><span>Avanço real</span></div>
+    <div class="card"><b>${plan.toFixed(1)}%</b><span>Meta até o fim de hoje</span></div>
+    <div class="card"><b style="color:${falta<0.05?'var(--dsm-green)':'var(--brand)'}">${falta<0.05?'✓ batida':falta.toFixed(1)+' p.p.'}</b><span>Falta para a meta de hoje</span></div>
+    <div class="card"><b>${ok}/${tk.length}</b><span>Concluídas</span></div>
+    <div class="card"><b style="color:${late?'var(--red)':'var(--brand)'}">${late}</b><span>Atrasadas (passou da data fim)</span></div>
+    <div class="card" style="border-top-color:${st.cor}"><b style="font-size:16px;color:${st.cor}">${st.label}</b><span>${st.det||'Status'}</span></div>`;
+  $('#chartTitle').textContent='Curva S — Planejado x Real'+(F.lider?' · '+F.lider:'')+(F.dia?' · '+fmtDay(F.dia):'');
+  const nUpd=tk.filter(t=>t.upd).length,lu=Math.max(0,...tk.map(t=>t.upd||0));
+  $('#chartSub').textContent=`${filtText()} · ${tk.length} atividades · ${nUpd} com lançamento${lu?` · último lançamento ${fmtDT(lu)}`:''}`;
+  $('#chart').innerHTML=chartInner(tk);
+  // por líder (respeita dia/área, ignora o filtro de líder para comparar)
+  const base=DB.tasks.filter(t=>(!F.area||eqN(t.area,F.area))&&(!F.dia||inDay(t,F.dia)));
+  const lids=uniq(base.map(t=>t.lider));
+  $('#tLider').innerHTML=`<thead><tr><th>Líder</th><th>Ativ.</th><th>Concl.</th><th>Real</th><th>Meta hoje</th><th>Falta</th><th style="width:22%">Avanço</th></tr></thead><tbody>`+
+    lids.map(l=>{const x=base.filter(t=>eqN(t.lider,l)),r=realNow(x),p=metaHoje(x),f=Math.max(0,p-r),atr=metaOntem(x)-r>0.5,lt=x.filter(t=>stAtv(t).k==='late').length;
+      return `<tr class="click ${eqN(F.lider,l)?'sel':''}" data-lider="${esc(l)}"><td><b>${esc(l||'—')}</b>${lt?` <span class="pill" style="color:var(--red);border-color:var(--red)">${lt} atras.</span>`:''}</td><td>${x.length}</td><td>${x.filter(t=>t.pct>=100).length}</td><td><b>${r.toFixed(0)}%</b></td><td>${p.toFixed(0)}%</td><td style="color:${f<0.5?'var(--dsm-green)':(atr?'var(--red)':'var(--fg)')};font-weight:700">${f<0.5?'✓':f.toFixed(0)}</td><td><div class="mini"><i style="width:${r}%"></i><u style="left:${p}%"></u></div></td></tr>`}).join('')+'</tbody>';
+  // por dia (respeita líder/área)
+  const baseD=DB.tasks.filter(t=>(!F.lider||eqN(t.lider,F.lider))&&(!F.area||eqN(t.area,F.area)));
+  const hk=todayKey();
+  $('#days').innerHTML=allDays(baseD).map(k=>{const x=baseD.filter(t=>inDay(t,k)),r=realNow(x),ok=x.filter(t=>t.pct>=100).length;
+    return `<div class="day ${k===hk?'today':''} ${F.dia===k?'sel':''}" data-dia="${k}"><div class="d">${fmtDay(k)}${k===hk?' · hoje':''}</div><div class="n">${x.length} ativ. · ${ok} concl.</div><div class="p">${r.toFixed(0)}%</div><div class="mini"><i style="width:${r}%"></i></div></div>`}).join('')||'<div class="muted">Sem atividades.</div>';
+}
+document.addEventListener('click',e=>{
+  const l=e.target.closest('[data-lider]');if(l){setF('lider',F.lider===l.dataset.lider?'':l.dataset.lider);return}
+  const d=e.target.closest('[data-dia]');if(d){setF('dia',F.dia===d.dataset.dia?'':d.dataset.dia);return}
+});
+
+/* ===================== atividades ===================== */
+function listaFiltrada(){
+  const f=$('#fStatus').value,q=norm($('#busca').value);
+  return filtered().filter(t=>{
+    const k=stAtv(t).k,p=+t.pct||0;
+    if(f==='pend'&&p>0)return false;
+    if(f==='and'&&!(p>0&&p<100))return false;
+    if(f==='ok'&&p<100)return false;
+    if(f==='late'&&k!=='late')return false;
+    if(f==='hoje'&&!(inDay(t,todayKey())&&p<100))return false;
+    if(q&&!norm([t.item,t.ordem,t.name,t.det,t.equip,t.area,t.lider,t.exec,t.forn,t.obs,t.acao].join(' ')).includes(q))return false;
+    return true;
+  }).sort((a,b)=>a.ini.localeCompare(b.ini)||String(a.lider).localeCompare(b.lider)||(+a.item||0)-(+b.item||0));
+}
 function rowHtml(t){
-  return `<div class="row ${t.pct>=100?'done':''} ${t.manual?'manual':''}" data-id="${esc(t.id)}">
+  const s=stAtv(t),id=esc(t.id);
+  const datas=fmtDay(t.ini)+((t.fim&&t.fim!==t.ini)?' → '+fmtDay(t.fim):'');
+  return `<div class="row st-${s.k}" data-id="${id}">
     <div class="rowtop">
       <div class="info">
-        <div class="name">${esc(t.name)}</div>
-        <div class="meta">${t.manual?'<span class="tag manual">Manual</span>':''}${t.ordem?`<span class="tag">Ordem ${esc(t.ordem)}</span>`:''}${t.crit?`<span class="tag">Crit. ${esc(t.crit)}</span>`:''}${t.team?`<span class="tag">${esc(t.team)}</span>`:''}${t.local?`<span class="tag">${esc(t.local)}</span>`:''}${t.ini?`<span class="tag">${fmtDate(t.ini)}${t.fim&&t.fim!==t.ini?' → '+fmtDate(t.fim):''}</span>`:''}</div>
+        <div class="name">${t.item!==''&&t.item!=null?`<span class="muted">#${esc(t.item)}</span> `:''}${esc(t.name)}</div>
+        <div class="meta">
+          <span class="stp" style="background:${s.cor}">${s.txt}</span>
+          <span class="tag lider">${esc(t.lider||'sem líder')}</span>
+          <span class="tag">📅 ${datas}</span>
+          ${t.area?`<span class="tag">${esc(t.area)}</span>`:''}${t.equip?`<span class="tag">${esc(t.equip)}</span>`:''}
+          ${t.ordem?`<span class="tag">Ordem ${esc(t.ordem)}</span>`:''}${t.tipo?`<span class="tag">${esc(t.tipo)}</span>`:''}
+          ${t.turno?`<span class="tag">Turno ${esc(t.turno)}</span>`:''}${t.hh?`<span class="tag">${esc(t.hh)} HH</span>`:''}
+          ${t.forn&&t.forn!=='INTERNO'?`<span class="tag">${esc(t.forn)}</span>`:''}${t.manual?'<span class="tag manual">Manual</span>':''}
+        </div>
       </div>
       <div class="pctbox">
-        <input type="range" min="0" max="100" step="5" value="${t.pct}" data-pct="${esc(t.id)}" aria-label="Percentual executado">
-        <div class="pct" data-pctfor="${esc(t.id)}">${t.pct}%</div>
-        <button class="quick" data-full="${esc(t.id)}" title="Marcar como 100%">100%</button>
+        <input type="range" min="0" max="100" step="5" value="${+t.pct||0}" data-pct="${id}" aria-label="Percentual executado">
+        <div class="pct" data-pctfor="${id}">${+t.pct||0}%</div>
+        <button class="quick" data-full="${id}" title="Marcar como concluída">100%</button>
       </div>
     </div>
-    <div class="bar"><i data-barfor="${esc(t.id)}" style="width:${t.pct}%"></i></div>
+    <div class="bar"><i data-barfor="${id}" style="width:${+t.pct||0}%"></i></div>
+    <div class="upd">${t.upd?`🕒 Atualizado em ${fmtDT(t.upd)}${t.updBy?' por '+esc(t.updBy):''} · ${(t.hist||[]).length} lançamento(s)`:'Sem lançamento ainda'}${(t.hist||[]).length?` · <span class="lnk" data-undo="${id}">desfazer último</span>`:''}</div>
+    ${(t.det||t.exec||t.rec||t.ptw||t.pedido)?`<details class="det"><summary>Detalhes da programação</summary><div>${t.exec?'<b>Executante(s):</b> '+esc(t.exec)+'\n':''}${t.rec?'<b>Recursos:</b> '+esc(t.rec)+'\n':''}${t.ptw?'<b>PTW:</b> '+esc(t.ptw)+'  ':''}${t.pedido&&t.pedido!=='N/A'?'<b>Pedido:</b> '+esc(t.pedido)+'  ':''}${t.plano&&t.plano!=='N/A'?'<b>Plano:</b> '+esc(t.plano):''}${t.det?'\n\n'+esc(t.det):''}</div></details>`:''}
     <div class="obsRow">
-      <input type="text" data-obs="${esc(t.id)}" placeholder="Observações..." value="${esc(t.obs)}">
-      <input type="text" data-acao="${esc(t.id)}" placeholder="Ação / encaminhamento..." value="${esc(t.acao)}">
-      <label class="fotoBtn">📷<input type="file" accept="image/*" capture="environment" data-foto="${esc(t.id)}" hidden></label>
+      <input type="text" data-obs="${id}" placeholder="Observações..." value="${esc(t.obs)}">
+      <input type="text" data-acao="${id}" placeholder="Pendência / ação..." value="${esc(t.acao)}">
+      <label class="fotoBtn" title="Anexar foto">📷<input type="file" accept="image/*" capture="environment" data-foto="${id}" hidden></label>
     </div>
-    <div class="dtRow">
-      <span class="dtLab">🕒 Lançamento</span>
-      <input type="date" min="2000-01-01" max="2099-12-31" data-dtd="${esc(t.id)}" value="${hasDt(t)?datePart(+t.dt):''}" aria-label="Data do lançamento">
-      <input type="time" data-dtt="${esc(t.id)}" value="${hasDt(t)?timePart(+t.dt):''}" aria-label="Hora do lançamento">
-      <button class="quick" data-now="${esc(t.id)}" title="Usar data e hora atuais">Agora</button>
-      ${hasDt(t)?'':'<span class="dtWarn muted">sem data/hora — não entra na curva</span>'}
-      ${t.manual?`<button class="delTask" data-delt="${esc(t.id)}" title="Excluir esta atividade manual" style="margin-left:auto">🗑 Excluir</button>`:''}
-    </div>
-    ${t.foto?`<div class="fotoPrev"><img src="${t.foto}" alt="foto"><span class="fotoRemove" data-rmfoto="${esc(t.id)}">✕ remover foto</span></div>`:''}
+    ${t.foto?`<div class="fotoPrev"><img src="${t.foto}" alt="foto"><span class="lnk" data-rmfoto="${id}">✕ remover foto</span></div>`:''}
+    ${t.manual?`<div style="display:flex;margin-top:6px"><button class="delTask" data-delt="${id}">🗑 Excluir atividade manual</button></div>`:''}
   </div>`;
 }
-function renderList(){
-  const s=cur(),box=$('#list');if(!s||!box)return;
-  const arr=filtradas(s);
-  $('#count').textContent=`${arr.length} de ${(s.tasks||[]).length} atividades exibidas`;
-  box.innerHTML=arr.length?arr.map(rowHtml).join(''):'<div class="muted">Nenhuma atividade para exibir. Importe a planilha na aba Programação.</div>';
+let pendingList=false;
+function editing(){const a=document.activeElement;return a&&$('#list').contains(a)&&(a.type==='text'||a.type==='range')}
+function renderList(force){
+  if(!force&&editing()){pendingList=true;return}
+  pendingList=false;
+  const arr=listaFiltrada(),tot=filtered().length;
+  $('#count').textContent=`${arr.length} de ${tot} atividades · ${filtText()}`;
+  $('#list').innerHTML=arr.length?arr.map(rowHtml).join(''):'<div class="panel muted">Nenhuma atividade com esses filtros.</div>';
 }
-function renderExec(){
-  const sel=$('#selStop');
-  sel.innerHTML=DB.stops.length?DB.stops.map(s=>`<option value="${s.id}">${fmtDate(s.date)} · ${esc(s.area)} — ${esc(s.name)}</option>`).join(''):'<option value="">Cadastre uma parada primeiro</option>';
-  const s=cur();
-  if(!s){$('#execBody').innerHTML='<div class="panel muted">Nenhuma parada cadastrada. Vá em Programação, cadastre a parada e importe a planilha.</div>';return}
-  DB.sel=s.id;sel.value=s.id;
-  const fim=new Date(stopEnd(s));
-  $('#execBody').innerHTML=`
-    <div class="panel" style="padding:10px 14px"><strong>${esc(s.name)}</strong> <span class="pill">${esc(s.area)}</span>
-      <span class="muted"> · ${fmtDate(s.date)} ${esc(s.start||'07:00')} → ${pad(fim.getDate())}/${pad(fim.getMonth()+1)} ${pad(fim.getHours())}:${pad(fim.getMinutes())} (${+s.hours||8} h)</span>
-      <div class="progress"><i id="liveBar" style="width:${overall(s).toFixed(1)}%"></i></div></div>
-    <div class="panel noprint">
-      <h2>Como a Curva S é desenhada</h2>
-      <div class="muted">Em cada atividade, informe o % executado e a <b>data e hora</b> do lançamento. A curva real é montada com essas datas — atividade sem data/hora não entra na curva.</div>
-      <div class="muted" id="dtInfo" style="margin-top:6px">${dtInfoText(s)}</div>
-    </div>
-    <div class="cards" id="liveCards">${cardsHtml(s)}</div>
-    <div class="chartbox"><h3>Curva S da parada</h3>
-      <svg id="chart" viewBox="0 0 640 260" role="img" aria-label="Curva S planejado x real"></svg>
-      <div class="legend"><span><i style="background:var(--planned)"></i>Planejado</span><span><i style="background:var(--actual)"></i>Real (data/hora das atividades)</span><span><i style="background:var(--dsm-purple)"></i>Último lançamento</span></div></div>
-    <div class="panel noprint">
-      <div class="stophead"><h2 style="margin:0">Atividades fora da planilha</h2>
-        <button class="primary" id="toggleManual" type="button">＋ Cadastrar atividade manual</button></div>
-      <div id="manualForm" hidden>
-        <div class="formgrid">
-          <label style="grid-column:span 2">Descrição da atividade *<input id="mDesc" placeholder="Ex.: Troca de rolamento do motor M-101"></label>
-          <label>Ordem (se houver)<input id="mOrdem" placeholder="Ex.: 4001234567"></label>
-          <label>Criticidade<input id="mCrit" placeholder="Ex.: A"></label>
-          <label>Equipe<input id="mTeam" placeholder="Ex.: Mecânica"></label>
-          <label>Local<input id="mLocal" placeholder="Ex.: Fosfato - Moinho 2"></label>
-          <label>Data início<input id="mIni" type="date" value="${esc(s.date)}"></label>
-          <label>Data fim<input id="mFim" type="date" value="${esc(stopEndKey(s))}"></label>
-        </div>
-        <div class="actionsrow"><button class="primary" id="saveManual" type="button">💾 Salvar atividade</button><button class="secondary" id="cancelManual" type="button">Cancelar</button></div>
-      </div>
-    </div>
-    <div class="count muted" id="count" style="margin:8px 0"></div>
-    <div id="list"></div>`;
-  drawChart(s);renderList();
-}
+document.addEventListener('focusout',()=>setTimeout(()=>{if(pendingList&&!editing())renderList()},50));
 
-/* eventos da lista */
+function who(){return $('#whoSel').value||''}
+$('#whoSel').onchange=e=>{try{localStorage.setItem(WHO_KEY,e.target.value)}catch(_){}
+  const v=e.target.value;setF('lider',v&&v!=='PPCM'?v:'')};
+function lancar(t,p){
+  p=clamp(Math.round(+p||0),0,100);
+  if(p===(+t.pct||0))return;
+  const now=Date.now(),by=who();
+  t.hist=t.hist||[];
+  const last=t.hist[t.hist.length-1];
+  // ajustes seguidos (até 3 min, mesma pessoa) contam como um lançamento só
+  if(last&&now-last.t<3*60e3&&(last.by||'')===by){last.t=now;last.p=p}else t.hist.push({t:now,p,by});
+  t.pct=p;t.upd=now;t.updBy=by;
+  save([t.id]);
+}
 document.addEventListener('input',e=>{
-  const s=cur();if(!s)return;const t=e.target;
-  if(t.matches('[data-pct]')){
-    const a=s.tasks.find(x=>x.id===t.dataset.pct);if(!a)return;
-    a.pct=+t.value;
-    const lab=document.querySelector(`[data-pctfor="${a.id}"]`);if(lab)lab.textContent=a.pct+'%';
-    const bar=document.querySelector(`[data-barfor="${a.id}"]`);if(bar)bar.style.width=a.pct+'%';
-    const row=t.closest('.row');if(row)row.classList.toggle('done',a.pct>=100);
-    save();updateLive();
-  }else if(t.matches('[data-obs]')){const a=s.tasks.find(x=>x.id===t.dataset.obs);if(a){a.obs=t.value;save()}}
-  else if(t.matches('[data-acao]')){const a=s.tasks.find(x=>x.id===t.dataset.acao);if(a){a.acao=t.value;save()}}
+  const el=e.target;
+  if(el.matches('[data-pct]')){const v=+el.value;
+    const l=document.querySelector(`[data-pctfor="${el.dataset.pct}"]`);if(l)l.textContent=v+'%';
+    const b=document.querySelector(`[data-barfor="${el.dataset.pct}"]`);if(b)b.style.width=v+'%';}
+  else if(el.matches('[data-obs]')){const t=byId(el.dataset.obs);if(t){t.obs=el.value;save([t.id])}}
+  else if(el.matches('[data-acao]')){const t=byId(el.dataset.acao);if(t){t.acao=el.value;save([t.id])}}
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.matches('[data-pct]')){const t=byId(el.dataset.pct);if(!t)return;
+    if(!who()&&!window.__avisoWho){window.__avisoWho=1;alert('Dica: escolha seu nome em "Lançando como" para registrar quem atualizou.')}
+    lancar(t,el.value);el.blur();renderList(true);renderPainel();}
+  else if(el.matches('[data-foto]')&&el.files[0])processarFoto(el.files[0],el.dataset.foto);
 });
 document.addEventListener('click',e=>{
-  const s=cur();if(!s)return;const t=e.target;
-  if(t.id==='toggleManual'){const f=$('#manualForm');f.hidden=!f.hidden;if(!f.hidden)$('#mDesc').focus();return}
-  if(t.id==='cancelManual'){$('#manualForm').hidden=true;return}
-  if(t.id==='saveManual'){
-    const name=$('#mDesc').value.trim();
-    if(!name){alert('Informe a descrição da atividade.');$('#mDesc').focus();return}
-    const ordem=$('#mOrdem').value.trim();
-    const ini=$('#mIni').value||s.date,fim=$('#mFim').value||ini;
-    if(fim<ini){alert('A data fim não pode ser antes da data início.');return}
-    s.tasks=s.tasks||[];
-    if(ordem&&s.tasks.some(x=>x.ordem===ordem)){alert(`A ordem ${ordem} já está nesta parada.`);return}
-    s.tasks.push({id:uid('T'),key:ordem||uid('M'),manual:true,ordem,name,crit:$('#mCrit').value.trim(),local:$('#mLocal').value.trim(),team:$('#mTeam').value.trim(),ini,fim,pct:0,dt:null,obs:'',acao:'',foto:null});
-    save();
-    ['mDesc','mOrdem','mCrit','mTeam','mLocal'].forEach(i=>$('#'+i).value='');
-    $('#fStatus').value='';$('#busca').value='';
-    renderList();updateLive();$('#mDesc').focus();
-    return;
-  }
-  if(t.matches('[data-delt]')){
-    const a=s.tasks.find(x=>x.id===t.dataset.delt);if(!a)return;
-    if(!confirm(`Excluir a atividade manual "${a.name}"?`))return;
-    s.tasks=s.tasks.filter(x=>x.id!==a.id);save();renderList();updateLive();return;
-  }
-  if(t.matches('[data-now]')){
-    const a=s.tasks.find(x=>x.id===t.dataset.now);if(!a)return;
-    const n=new Date();n.setSeconds(0,0);a.dt=n.getTime();save();renderList();updateLive();return;
-  }
-  if(t.matches('[data-full]')){
-    const a=s.tasks.find(x=>x.id===t.dataset.full);if(!a)return;
-    a.pct=100;save();renderList();updateLive();
-  }else if(t.matches('[data-rmfoto]')){
-    const a=s.tasks.find(x=>x.id===t.dataset.rmfoto);if(a){a.foto=null;save();renderList()}
-  }
-});
-function setTaskDt(a,date,time,s){
-  if(!date){a.dt=null}
-  else{
-    const v=fromParts(date,time||s.start||'07:00');
-    if(!validDt(v)){alert('Data inválida. Use o ano completo, ex.: 26/10/2026.');renderList();return}
-    a.dt=v;
-  }
-  save();renderList();updateLive();
-}
-document.addEventListener('change',e=>{
-  const t=e.target;
-  if(t.matches('[data-dtd],[data-dtt]')){
-    const s=cur();if(!s)return;
-    const id=t.dataset.dtd||t.dataset.dtt;
-    const a=s.tasks.find(x=>x.id===id);if(!a)return;
-    const row=t.closest('.row');
-    setTaskDt(a,row.querySelector('[data-dtd]').value,row.querySelector('[data-dtt]').value,s);
-    return;
-  }
-  if(t.matches('[data-foto]')&&t.files[0]){processarFoto(t.files[0],t.dataset.foto)}
+  const el=e.target;
+  if(el.matches('[data-full]')){const t=byId(el.dataset.full);if(t){lancar(t,100);renderList(true);renderPainel()}}
+  else if(el.matches('[data-undo]')){const t=byId(el.dataset.undo);if(!t||!t.hist.length)return;
+    if(!confirm('Desfazer o último lançamento desta atividade?'))return;
+    t.hist.pop();const l=t.hist[t.hist.length-1];t.pct=l?l.p:0;t.upd=l?l.t:null;t.updBy=l?(l.by||''):'';save([t.id]);renderList(true);renderPainel()}
+  else if(el.matches('[data-rmfoto]')){const t=byId(el.dataset.rmfoto);if(t){t.foto=null;save([t.id]);renderList(true)}}
+  else if(el.matches('[data-delt]')){const t=byId(el.dataset.delt);if(!t)return;
+    if(!confirm(`Excluir a atividade manual "${t.name}"?`))return;
+    DB.tasks=DB.tasks.filter(x=>x.id!==t.id);persistLocal();if(window.__fbDelete)window.__fbDelete(t.id);fillFilters();renderAll()}
 });
 function processarFoto(file,id){
-  const s=cur(),a=s&&s.tasks.find(x=>x.id===id);if(!a)return;
+  const t=byId(id);if(!t)return;
   const rd=new FileReader();
-  rd.onload=ev=>{
-    const img=new Image();
-    img.onload=()=>{
-      const sc=Math.min(1,480/img.width),cv=document.createElement('canvas');
+  rd.onload=ev=>{const img=new Image();
+    img.onload=()=>{const sc=Math.min(1,560/img.width),cv=document.createElement('canvas');
       cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
       cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      a.foto=cv.toDataURL('image/jpeg',0.6);save();renderList();
-    };
+      t.foto=cv.toDataURL('image/jpeg',0.6);save([t.id]);renderList(true)};
     img.onerror=()=>alert('Não foi possível processar essa imagem.');
-    img.src=ev.target.result;
-  };
+    img.src=ev.target.result};
   rd.readAsDataURL(file);
 }
-$('#selStop').onchange=e=>{DB.sel=e.target.value;save();renderExec()};
-$('#fStatus').onchange=renderList;
-$('#busca').oninput=renderList;
+$('#fStatus').onchange=()=>renderList(true);
+$('#busca').oninput=()=>renderList(true);
 
-/* ===================== programação: paradas ===================== */
-function renderStopsList(){
-  const box=$('#stopsList');if(!box)return;
-  const areas=[...new Set(DB.stops.map(s=>s.area))];
-  const dl=$('#areasList');if(!dl.dataset.fromSheet)dl.innerHTML=areas.map(a=>`<option value="${esc(a)}">`).join('');
-  box.innerHTML=DB.stops.length?DB.stops.map(s=>{
-    const p=overall(s),n=(s.tasks||[]).length;
-    const st=statusPrazo(s);return `<div class="stopitem"><div class="stophead"><div><strong>${esc(s.name)}</strong>
-      <div style="margin-top:5px"><span class="pill">${esc(s.area)}</span> <span class="pill" style="border-color:${st.cor};color:${st.cor}">${st.icone} ${st.label}</span> <span class="muted">${fmtDate(s.date)} · ${esc(s.start||'07:00')} · ${+s.hours||8} h</span></div></div>
-      <div class="actionsrow" style="margin:0"><button class="secondary" onclick="openStop('${s.id}')">Abrir execução</button><button class="secondary" onclick="editStop('${s.id}')">Editar</button><button class="danger" onclick="deleteStop('${s.id}')">Excluir</button></div></div>
-      <div class="progress"><i style="width:${p.toFixed(1)}%"></i></div>
-      <div class="muted">${n} atividades · ${p.toFixed(1)}% de avanço${s.notes?' · '+esc(s.notes):''}</div></div>`;
-  }).join(''):'<div class="muted">Nenhuma parada cadastrada.</div>';
-}
-window.openStop=id=>{DB.sel=id;save();setTab('exec')};
-window.editStop=id=>{
-  const s=DB.stops.find(x=>x.id===id);if(!s)return;
-  $('#stopName').value=s.name;$('#stopArea').value=s.area;$('#stopDate').value=s.date;
-  $('#stopStart').value=s.start||'07:00';$('#stopHours').value=s.hours||8;$('#stopNotes').value=s.notes||'';
-  $('#saveStop').dataset.edit=id;$('#saveStop').textContent='💾 Salvar alterações';window.scrollTo({top:0,behavior:'smooth'});
-};
-window.deleteStop=id=>{if(confirm('Excluir esta parada e todas as suas atividades?')){DB.stops=DB.stops.filter(s=>s.id!==id);if(DB.sel===id)DB.sel='';save();refreshAll()}};
-function clearForm(){
-  ['stopName','stopArea','stopDate','stopNotes'].forEach(i=>$('#'+i).value='');
-  $('#stopStart').value='07:00';$('#stopHours').value=8;
-  delete $('#saveStop').dataset.edit;$('#saveStop').textContent='＋ Cadastrar parada';
-}
-$('#clearStop').onclick=clearForm;
-$('#saveStop').onclick=()=>{
-  const area=$('#stopArea').value.trim(),date=$('#stopDate').value;
-  if(!area||!date){alert('Preencha pelo menos a área e a data da parada.');return}
-  const name=$('#stopName').value.trim()||('Parada '+area);
-  const edit=$('#saveStop').dataset.edit;
-  let s=edit?DB.stops.find(x=>x.id===edit):null;
-  if(!s){s={id:uid('P'),tasks:[],hist:[]};DB.stops.push(s)}
-  Object.assign(s,{name,area,date,start:$('#stopStart').value||'07:00',hours:Math.max(0.5,+$('#stopHours').value||8),notes:$('#stopNotes').value.trim()});
-  if(!DB.sel)DB.sel=s.id;
-  save();clearForm();refreshAll();
+/* ===================== atividade manual ===================== */
+$('#saveManual').onclick=()=>{
+  const name=clean($('#mDesc').value),lider=clean($('#mLider').value).toUpperCase(),ini=$('#mIni').value;
+  if(!name||!lider||!ini){alert('Preencha descrição, líder e data início.');return}
+  const fim=$('#mFim').value||ini;if(fim<ini){alert('A data fim não pode ser antes da data início.');return}
+  const id=uid('m');
+  DB.tasks.push(newTask({id,key:id,manual:true,name,lider,area:clean($('#mArea').value).toUpperCase(),equip:clean($('#mEquip').value),ordem:clean($('#mOrdem').value),ini,fim,hh:+$('#mHH').value||0,exec:clean($('#mExec').value),item:''}));
+  save([id]);['mDesc','mEquip','mOrdem','mHH','mExec'].forEach(i=>$('#'+i).value='');
+  fillFilters();renderAll();alert('Atividade cadastrada. Ela já entra na curva pelas datas informadas.');
 };
 
 /* ===================== importação da planilha ===================== */
-let TABLE=null,PLAN=[];
+let PEND=null;
 function pickTable(tabs){
   let best=null;
-  for(const tab of tabs){
-    const data=tab.data;
-    for(let hi=0;hi<Math.min(data.length,15);hi++){
-      const hs=(data[hi]||[]).map(norm);
-      const score=(hs.includes('area')?3:0)+(hs.some(v=>v.includes('ordem'))?1:0)+(hs.some(v=>v.includes('criticidade'))?1:0)+(hs.some(v=>v.includes('descricao')||v.includes('texto breve'))?2:0)+(hs.some(v=>v.includes('data inic'))?3:0)+(hs.some(v=>v.includes('data fim')||v.includes('data fin'))?2:0);
-      if(!best||score>best.score||(score===best.score&&data.length<best.rows.length+hi))best={score,name:tab.name,headers:hs,rows:data.slice(hi+1)};
-    }
+  for(const tab of tabs)for(let hi=0;hi<Math.min(tab.data.length,15);hi++){
+    const hs=(tab.data[hi]||[]).map(norm);
+    const sc=(hs.some(h=>h.startsWith('descri'))?3:0)+(hs.some(h=>h.startsWith('lider'))?3:0)+(hs.some(h=>h.includes('data inic'))?3:0)+(hs.some(h=>h.includes('data fim'))?2:0)+(hs.some(h=>h.includes('ordem'))?1:0);
+    if(!best||sc>best.sc)best={sc,name:tab.name,hs,rows:tab.data.slice(hi+1)};
   }
-  if(!best||best.score<7)throw new Error('Não encontrei a aba de consulta com Área, Descrição, Data Início e Data Fim.');
+  if(!best||best.sc<9)throw new Error('não encontrei a aba com Descrição, Líder e Data início de execução.');
   return best;
 }
 async function lerArquivo(file){
-  if(file.name.toLowerCase().endsWith('.csv')){
-    const txt=await file.text(),first=txt.split(/\r?\n/)[0]||'';
-    const sep=first.includes(';')?';':(first.includes('\t')?'\t':',');
-    const data=txt.split(/\r?\n/).filter(Boolean).map(l=>l.split(sep).map(x=>x.replace(/^"|"$/g,'')));
-    return pickTable([{name:file.name,data}]);
-  }
-  if(!window.XLSX)throw new Error('A biblioteca de leitura Excel não carregou. Conecte-se à internet e tente novamente.');
-  const buf=await file.arrayBuffer();
-  const meta=XLSX.read(buf,{type:'array',bookSheets:true});
-  const names=meta.SheetNames||[];
-  const cons=names.filter(n=>norm(n).includes('consulta'));
-  const use=cons.length?cons:names.filter(n=>!norm(n).includes('base de dados'));
-  const wb=XLSX.read(buf,{type:'array',sheets:use.length?use:names});
-  const tabs=[];
-  for(const sn of wb.SheetNames){
-    const ws=wb.Sheets[sn];if(!ws||!ws['!ref'])continue;
-    let maxR=0,maxC=0;
-    for(const k in ws){if(k[0]==='!')continue;const c=XLSX.utils.decode_cell(k);if(c.r>maxR)maxR=c.r;if(c.c>maxC)maxC=c.c}
-    tabs.push({name:sn,data:XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true,range:{s:{r:0,c:0},e:{r:maxR,c:maxC}}})});
-  }
-  return pickTable(tabs);
+  if(/\.csv$/i.test(file.name)){const txt=await file.text(),f=txt.split(/\r?\n/)[0]||'',sep=f.includes(';')?';':(f.includes('\t')?'\t':',');
+    return pickTable([{name:file.name,data:txt.split(/\r?\n/).filter(Boolean).map(l=>l.split(sep).map(x=>x.replace(/^"|"$/g,'')))}])}
+  if(!window.XLSX)throw new Error('a biblioteca de leitura do Excel não carregou (sem internet?).');
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false});
+  return pickTable(wb.SheetNames.map(n=>({name:n,data:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:true})})));
 }
-function colIdx(hs,words,exact){return hs.findIndex(h=>exact?words.includes(h):words.some(w=>h.includes(w)))}
-function normalizaLinhas(tb){
-  const hs=tb.headers;
-  const c={area:colIdx(hs,['area'],true),ordem:colIdx(hs,['ordem']),crit:colIdx(hs,['criticidade']),desc:colIdx(hs,['descricao','texto breve']),
-    local:colIdx(hs,['local']),ini:colIdx(hs,['data inic']),fim:hs.findIndex(h=>h.includes('data fim')||h.includes('data fin')),team:colIdx(hs,['equipe'])};
-  const seen=new Set(),out=[];
+function linhas(tb){
+  const hs=tb.hs,ix=(f)=>hs.findIndex(f),all=(f)=>hs.map((h,i)=>f(h)?i:-1).filter(i=>i>=0);
+  const c={item:ix(h=>h==='item'),forn:ix(h=>h.startsWith('fornec')),pedido:ix(h=>h==='pedido'),tipo:ix(h=>h==='tipo'),lider:ix(h=>h.startsWith('lider')),turno:ix(h=>h==='turno'),ptw:ix(h=>h==='ptw'),ordem:ix(h=>h.startsWith('ordem')),plano:ix(h=>h==='plano'),area:ix(h=>h==='area'),equip:ix(h=>h.startsWith('equipamento')),desc:ix(h=>h.startsWith('descri')),det:ix(h=>h.startsWith('detalha')),hh:ix(h=>h.startsWith('hh')),qnt:ix(h=>h.includes('qnt')),exec:all(h=>h.startsWith('executante')&&!h.includes('qnt')),rec:all(h=>h.startsWith('recurso')),ini:ix(h=>h.includes('data inic')),fim:ix(h=>h.includes('data fim'))};
+  const g=(r,i)=>i>=0?clean(r[i]):'';
+  const out=[];
   for(const r of tb.rows){
-    const area=String(r[c.area]??'').trim(),desc=String(r[c.desc]??'').trim();
-    if(!area||!desc)continue;
-    const ini=dateKey(r[c.ini]),fim=c.fim>=0?(dateKey(r[c.fim])||ini):ini;
-    if(!ini)continue;
-    const ordem=c.ordem>=0?String(r[c.ordem]??'').trim():'';
-    const key=ordem||norm(desc+'|'+(r[c.local]??''));
-    const dk=area+'|'+key;if(seen.has(dk))continue;seen.add(dk);
-    out.push({area,ordem,key,name:desc,crit:c.crit>=0?String(r[c.crit]??'').trim():'',local:c.local>=0?String(r[c.local]??'').trim():'',team:c.team>=0?String(r[c.team]??'').trim():'',ini,fim});
+    const name=g(r,c.desc),ini=dateKey(r[c.ini]);if(!name||!ini)continue;
+    out.push({item:g(r,c.item),forn:g(r,c.forn),pedido:g(r,c.pedido),tipo:g(r,c.tipo),lider:g(r,c.lider),turno:g(r,c.turno),ptw:g(r,c.ptw),ordem:g(r,c.ordem),plano:g(r,c.plano),area:g(r,c.area),equip:g(r,c.equip),name,det:c.det>=0?String(r[c.det]??'').trim():'',hh:+r[c.hh]||0,qnt:g(r,c.qnt),exec:c.exec.map(i=>clean(r[i])).filter(Boolean).join(' / '),rec:c.rec.map(i=>clean(r[i])).filter(Boolean).join(' / '),ini,fim:(c.fim>=0?dateKey(r[c.fim]):'')||ini});
   }
-  return out;
+  return withKeys(out);
 }
-function casar(){
-  PLAN=DB.stops.map(s=>{
-    const a=norm(s.area),d0=s.date,d1=stopEndKey(s);
-    const found=TABLE.filter(r=>norm(r.area)===a&&r.ini<=d1&&r.fim>=d0);
-    const have=new Map((s.tasks||[]).map(t=>[t.key,t]));
-    return {stop:s,found,novas:found.filter(r=>!have.has(r.key)).length,atual:found.filter(r=>have.has(r.key)).length};
-  });
-}
-$('#scheduleFile').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return;
-  const msg=$('#importMessage');msg.textContent='Lendo a planilha...';
+$('#sheetFile').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;$('#importMsg').textContent='Lendo a planilha...';
   try{
-    const tb=await lerArquivo(file);
-    TABLE=normalizaLinhas(tb);
-    const areas=[...new Set(TABLE.map(r=>r.area))].sort();
-    $('#areasList').dataset.fromSheet='1';
-    $('#areasList').innerHTML=areas.map(a=>`<option value="${esc(a)}">`).join('');
-    if(!DB.stops.length){
-      msg.textContent=`Aba "${tb.name}" lida: ${TABLE.length} atividades. Agora cadastre a(s) parada(s) acima e escolha o arquivo de novo. Áreas na planilha: ${areas.join(', ')}.`;
-      $('#importPreview').innerHTML='';$('#importBtn').disabled=true;return;
-    }
-    casar();
-    const total=PLAN.reduce((a,p)=>a+p.found.length,0);
-    msg.textContent=`Aba "${tb.name}" · ${TABLE.length} atividades na planilha · ${total} pertencem às paradas cadastradas.`;
-    $('#importPreview').innerHTML=`<div class="tablewrap"><table><thead><tr><th>Parada</th><th>Área</th><th>Data</th><th>Encontradas</th><th>Novas</th><th>Já existentes (atualiza dados)</th></tr></thead><tbody>${PLAN.map(p=>`<tr><td>${esc(p.stop.name)}</td><td>${esc(p.stop.area)}</td><td>${fmtDate(p.stop.date)}</td><td>${p.found.length}</td><td>${p.novas}</td><td>${p.atual}</td></tr>`).join('')}</tbody></table></div>`+
-      (total?'':`<div class="muted" style="margin-top:6px">Nenhuma atividade casou. Confira se o nome da área é igual ao da planilha (${esc(areas.join(', '))}) e se a data da parada está dentro da semana carregada.</div>`);
-    $('#importBtn').disabled=!total;
-  }catch(err){msg.textContent='';alert('Não foi possível ler a planilha: '+err.message)}
-});
+    const tb=await lerArquivo(f),rows=linhas(tb),have=new Map(DB.tasks.map(t=>[t.key,t]));
+    const novas=rows.filter(r=>!have.has(r.key)),atual=rows.filter(r=>have.has(r.key));
+    const keys=new Set(rows.map(r=>r.key)),fora=DB.tasks.filter(t=>!t.manual&&!keys.has(t.key));
+    PEND={rows,fora};
+    $('#importMsg').textContent=`Aba "${tb.name}": ${rows.length} atividades lidas.`;
+    $('#importPrev').innerHTML=`<div class="tablewrap"><table><tr><th>Novas</th><th>Já existentes (dados atualizados, % mantido)</th><th>Não estão mais na planilha</th></tr><tr><td><b>${novas.length}</b></td><td><b>${atual.length}</b></td><td><b>${fora.length}</b></td></tr></table></div>`+
+      (fora.length?`<label style="margin-top:8px;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg)"><input type="checkbox" id="rmFora" style="width:auto;margin:0"> Remover as ${fora.length} que saíram da planilha (as que já têm lançamento são mantidas)</label>`:'');
+    $('#importBtn').disabled=!rows.length;
+  }catch(err){$('#importMsg').textContent='';alert('Não foi possível ler a planilha: '+err.message)}
+};
 $('#importBtn').onclick=()=>{
-  if(!PLAN.length)return;
-  let add=0,upd=0;
-  for(const p of PLAN){
-    const s=p.stop,have=new Map((s.tasks||[]).map(t=>[t.key,t]));
-    for(const r of p.found){
-      const t=have.get(r.key);
-      if(t){Object.assign(t,{ordem:r.ordem,name:r.name,crit:r.crit,local:r.local,team:r.team,ini:r.ini,fim:r.fim});upd++}
-      else{s.tasks.push({id:uid('T'),key:r.key,ordem:r.ordem,name:r.name,crit:r.crit,local:r.local,team:r.team,ini:r.ini,fim:r.fim,pct:0,dt:null,obs:'',acao:'',foto:null});add++}
-    }
-  }
-  save();PLAN=[];$('#importBtn').disabled=true;
-  $('#importMessage').textContent=`Importação concluída: ${add} atividades adicionadas e ${upd} atualizadas (o % já lançado foi mantido).`;
-  $('#importPreview').innerHTML='';$('#scheduleFile').value='';
-  refreshAll();
+  if(!PEND)return;const have=new Map(DB.tasks.map(t=>[t.key,t])),ids=[];let add=0,upd=0,rm=0;
+  for(const r of PEND.rows){const t=have.get(r.key);
+    if(t){const keep={pct:t.pct,hist:t.hist,upd:t.upd,updBy:t.updBy,obs:t.obs,acao:t.acao,foto:t.foto};Object.assign(t,newTask(r),keep);upd++;ids.push(t.id)}
+    else{const n=newTask(r);DB.tasks.push(n);add++;ids.push(n.id)}}
+  if($('#rmFora')&&$('#rmFora').checked){for(const t of PEND.fora)if(!(t.hist||[]).length){DB.tasks=DB.tasks.filter(x=>x!==t);if(window.__fbDelete)window.__fbDelete(t.id);rm++}}
+  save(ids);PEND=null;$('#importBtn').disabled=true;$('#importPrev').innerHTML='';$('#sheetFile').value='';
+  $('#importMsg').textContent=`Planilha aplicada: ${add} novas, ${upd} atualizadas${rm?`, ${rm} removidas`:''}. Os % lançados foram mantidos.`;
+  fillFilters();renderAll();
 };
 
-/* ===================== exportar / backup / imprimir ===================== */
-function csvEsc(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
+/* ===================== backup / csv ===================== */
 function baixar(blob,nome){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
-/* ===================== relatório PDF da parada selecionada ===================== */
-function statusAtv(p){p=+p||0;return p>=100?{txt:'CONCLUÍDA',cor:'#5bb947'}:p>0?{txt:'EM EXECUÇÃO',cor:'#f5a01a'}:{txt:'NÃO INICIADA',cor:'#6b7280'}}
+$('#expJson').onclick=()=>baixar(new Blob([JSON.stringify(DB)],{type:'application/json'}),'backup-inventario-2026.json');
+$('#impJsonBtn').onclick=()=>$('#impJson').click();
+$('#impJson').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  try{const r=JSON.parse(await f.text());if(!r||!Array.isArray(r.tasks))throw new Error('arquivo inválido');
+    if(confirm('Substituir os dados atuais pelo backup?')){DB=r;save(DB.tasks.map(t=>t.id));fillFilters();renderAll()}}
+  catch(err){alert('Não foi possível restaurar: '+err.message)}e.target.value=''};
+$('#expCsv').onclick=()=>{
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const cab=['Item','Líder','Área','Equipamento','Ordem','Descrição','Data início','Data fim','% executado','Status','Atualizado em','Por','Observações','Pendência/ação'];
+  const lin=filtered().map(t=>[t.item,t.lider,t.area,t.equip,t.ordem,t.name,fmtDate(t.ini),fmtDate(t.fim),t.pct,stAtv(t).txt,t.upd?fmtDT(t.upd):'',t.updBy,t.obs,t.acao].map(q).join(';'));
+  baixar(new Blob(['﻿'+[cab.join(';'),...lin].join('\r\n')],{type:'text/csv'}),'status-inventario-2026.csv');
+};
+
+/* ===================== relatório PDF ===================== */
 function gerarRelatorio(){
-  const s=cur();if(!s){alert('Cadastre e selecione uma parada primeiro.');return}
-  const tasks=filtradas(s);
-  if(!tasks.length){alert('Nenhuma atividade para o filtro atual.');return}
-  const fStatusTxt=($('#fStatus').selectedOptions[0]||{}).textContent||'Todas as atividades';
-  const busca=$('#busca').value.trim();
-  const fim=new Date(stopEnd(s));
-  const fimTxt=`${pad(fim.getDate())}/${pad(fim.getMonth()+1)}/${fim.getFullYear()} ${pad(fim.getHours())}:${pad(fim.getMinutes())}`;
-  const periodo=`${fmtDate(s.date)} ${esc(s.start||'07:00')} a ${fimTxt}`;
-  const titulo=esc(s.name).toUpperCase();
-  const gerado=new Date().toLocaleString('pt-BR');
-  const prog=tasks.reduce((a,t)=>a+(+t.pct||0),0)/tasks.length;
-  const ok=tasks.filter(t=>(+t.pct||0)>=100).length;
-  const comObs=tasks.filter(t=>(t.obs||'').trim()||(t.acao||'').trim()).length;
-  const comImg=tasks.filter(t=>t.foto).length;
-  const st=statusPrazo(s),plan=plannedAt(s,referenceTime(s));
-  const stCor=String(st.cor).startsWith('var')?'#6b7280':st.cor;
-  const total=2+tasks.length;
-  const foot=n=>`<div class="foot"><span>Documento de acompanhamento - Atividades da parada - ${esc(s.name)} · ${esc(s.area)}</span><span>Página ${n} de ${total}</span></div>`;
-
-  // Página 1 — capa
-  let html=`<section class="page">
-    <h1>RELATÓRIO DE ACOMPANHAMENTO</h1>
-    <h2>${titulo}</h2>
-    <div class="small">Área: <b>${esc(s.area)}</b> · Período: ${periodo} (${+s.hours||8} h)</div>
-    <div class="small">Atividades incluídas no relatório: ${tasks.length}${tasks.length!==(s.tasks||[]).length?` (de ${(s.tasks||[]).length} cadastradas)`:''}</div>
-    ${s.notes?`<div class="small">Observações da parada: ${esc(s.notes)}</div>`:''}
-    <div class="box"><div class="boxh">CRITÉRIOS UTILIZADOS</div><ul>
-      <li>Filtro de status: ${esc(fStatusTxt)}</li>
-      <li>Pesquisa: ${busca?esc(busca):'Sem pesquisa'}</li>
-      <li>Progresso geral do conjunto selecionado: ${prog.toFixed(1)}%</li>
-      <li>Planejado até o último lançamento: ${plan.toFixed(1)}% · Status da parada: <span style="color:${stCor}">${st.label}</span></li>
-      <li>Atividades concluídas: ${ok}/${tasks.length}</li>
-      <li>Atividades com observação: ${comObs}</li>
-      <li>Atividades com imagem: ${comImg}</li></ul></div>
-    <div class="box"><div class="boxh">OBSERVAÇÃO</div><p>As páginas seguintes apresentam a Curva S da parada e uma ficha individual para cada atividade, com as informações cadastradas, observações e imagens anexadas.</p></div>
+  const tk=filtered().slice().sort((a,b)=>a.ini.localeCompare(b.ini)||String(a.lider).localeCompare(b.lider));
+  if(!tk.length){alert('Nenhuma atividade com os filtros atuais.');return}
+  const real=realNow(tk),plan=metaHoje(tk),st=status(tk),ok=tk.filter(t=>t.pct>=100).length,late=tk.filter(t=>stAtv(t).k==='late').length;
+  const gerado=new Date().toLocaleString('pt-BR'),total=3+Math.ceil(tk.length/14);
+  const foot=n=>`<div class="foot"><span>Inventário 2026 · Acompanhamento de Atividades · ${esc(filtText())}</span><span>Página ${n} de ${total}</span></div>`;
+  const lids=uniq(tk.map(t=>t.lider));
+  const days=allDays(tk);
+  let html=`<section class="page"><h1>INVENTÁRIO 2026 — ACOMPANHAMENTO DE ATIVIDADES</h1>
+    <div class="small">Parada de Manutenção · ANH Mairinque · PPCM · Gerado em ${gerado}</div><div class="small"><b>Filtros:</b> ${esc(filtText())}</div>
+    <div class="kpis"><div><b>${real.toFixed(1)}%</b>Avanço real</div><div><b>${plan.toFixed(1)}%</b>Meta até o fim de hoje</div><div><b>${Math.max(0,plan-real)<0.05?'✓':Math.max(0,plan-real).toFixed(1)+' p.p.'}</b>Falta para a meta</div><div><b>${ok}/${tk.length}</b>Concluídas</div><div><b style="color:${late?'#d64545':'#1c3f94'}">${late}</b>Atrasadas</div><div><b style="color:${st.cor}">${st.label}</b>Status</div></div>
+    <div class="boxh">AVANÇO POR LÍDER</div><table><thead><tr><th>Líder</th><th>Atividades</th><th>Concluídas</th><th>Atrasadas</th><th>Real</th><th>Meta hoje</th><th>Falta</th></tr></thead><tbody>${lids.map(l=>{const x=tk.filter(t=>eqN(t.lider,l)),r=realNow(x),p=metaHoje(x);return `<tr><td><b>${esc(l)}</b></td><td>${x.length}</td><td>${x.filter(t=>t.pct>=100).length}</td><td>${x.filter(t=>stAtv(t).k==='late').length}</td><td><b>${r.toFixed(1)}%</b></td><td>${p.toFixed(1)}%</td><td style="color:${metaOntem(x)-r>0.5?'#d64545':'#1a1d23'}">${p-r<0.05?'✓':(p-r).toFixed(1)}</td></tr>`}).join('')}</tbody></table>
+    <div class="boxh" style="margin-top:12px">AVANÇO POR DIA</div><table><thead><tr>${days.map(k=>`<th>${fmtDay(k)}</th>`).join('')}</tr></thead><tbody><tr>${days.map(k=>{const x=tk.filter(t=>inDay(t,k));return `<td><b>${realNow(x).toFixed(0)}%</b><br><span class="muted">${x.filter(t=>t.pct>=100).length}/${x.length} concl.</span></td>`}).join('')}</tr></tbody></table>
     ${foot(1)}</section>`;
-
-  // Página 2 — Curva S
-  html+=`<section class="page">
-    <h1>CURVA S DA PARADA</h1>
-    <div class="small">${esc(s.name)} · ${esc(s.area)} · ${periodo}</div>
-    <div class="chart"><h3>Curva S - Planejado x Real</h3>
-      <svg viewBox="0 0 640 260">${chartInner(s)}</svg>
-      <div class="legend"><span><i style="background:#94a3b8"></i>Planejado</span><span><i style="background:#f5a01a"></i>Real</span><span><i style="background:#8a3f97"></i>Último lançamento</span></div></div>
-    <div class="small">${esc(dtInfoText(s))}</div>
-    ${foot(2)}</section>`;
-
-  // Uma ficha por atividade
-  tasks.forEach((t,i)=>{
-    const p=+t.pct||0,sa=statusAtv(p);
-    const data=t.ini?fmtDate(t.ini)+(t.fim&&t.fim!==t.ini?' a '+fmtDate(t.fim):''):fmtDate(s.date);
-    const lanc=hasDt(t)?new Date(+t.dt).toLocaleString('pt-BR'):'Sem lançamento';
-    const obs=[(t.obs||'').trim()?`<p><b>Observações:</b> ${esc(t.obs)}</p>`:'',(t.acao||'').trim()?`<p><b>Ação / encaminhamento:</b> ${esc(t.acao)}</p>`:''].join('')||'<p class="muted">Nenhuma observação registrada.</p>';
-    html+=`<section class="page">
-      <div class="top"><div><b>${titulo}</b><div class="small">${periodo}</div></div>
-        <div style="text-align:right"><b>${t.ordem?'ORDEM '+esc(t.ordem):'ATIVIDADE '+(i+1)}</b><div class="small">Gerado em ${gerado}</div></div></div>
-      <table><thead><tr><th style="width:44%">ATIVIDADE</th><th>ÁREA</th><th>EQUIPE</th><th>DATA</th><th>PROGRESSO</th></tr></thead>
-        <tbody><tr><td>${esc(t.name)}</td><td>${esc(s.area)}</td><td>${esc(t.team||'—')}</td><td>${data}</td><td><b>${p}%</b></td></tr></tbody></table>
-      <div class="pbar"><i style="width:${p}%;background:${sa.cor}"></i></div><div class="small c">${p}% concluído</div>
-      <div class="two">
-        <div class="col"><div class="boxh">REGISTRO FOTOGRÁFICO</div><div class="foto">${t.foto?`<img src="${t.foto}">`:'<span class="muted">Nenhuma imagem anexada a esta atividade.</span>'}</div></div>
-        <div class="col"><div class="boxh">OBSERVAÇÕES / REGISTRO DA ATIVIDADE</div><div class="obs">${obs}</div></div>
-      </div>
-      <div class="boxh" style="margin-top:10px">INFORMAÇÕES DA ATIVIDADE</div>
-      <div class="info">
-        <div><b>Ordem:</b> ${esc(t.ordem||'—')}</div><div><b>Origem:</b> ${t.manual?'Manual':'Planilha'}</div>
-        <div><b>Criticidade:</b> ${esc(t.crit||'—')}</div><div><b>Local:</b> ${esc(t.local||'—')}</div>
-        <div><b>Data programada:</b> ${data}</div><div><b>Percentual executado:</b> ${p}%</div>
-        <div><b>Último lançamento:</b> ${lanc}</div><div><b>Equipe:</b> ${esc(t.team||'—')}</div>
-      </div>
-      <div class="status"><b style="color:${sa.cor}">${sa.txt}</b> | Parada: ${esc(s.name)} | Área: ${esc(s.area)}${t.team?' | Equipe: '+esc(t.team):''}</div>
-      ${foot(3+i)}</section>`;
-  });
-
-  const css=`@page{size:A4 landscape;margin:0}
-  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html+=`<section class="page"><h1>CURVA S — PLANEJADO x REAL</h1><div class="small">${esc(filtText())} · planejado acumulado por dia (datas de início e fim) · real com o % contado no dia programado de cada atividade</div>
+    <div class="chart"><svg viewBox="0 0 700 280">${chartInner(tk)}</svg>
+    <div class="legend"><span><i style="background:#94a3b8"></i>Planejado</span><span><i style="background:#f5a01a"></i>Real</span></div></div>${foot(2)}</section>`;
+  for(let p=0;p<Math.ceil(tk.length/14);p++){
+    const part=tk.slice(p*14,p*14+14);
+    html+=`<section class="page"><h1>LISTA DE ATIVIDADES</h1><table class="lst"><thead><tr><th>#</th><th>Líder</th><th style="width:34%">Atividade</th><th>Área / Equip.</th><th>Datas</th><th>%</th><th>Status</th><th style="width:20%">Obs. / pendência</th></tr></thead><tbody>${part.map(t=>{const s=stAtv(t);return `<tr><td>${esc(t.item)}</td><td>${esc(t.lider)}</td><td>${esc(t.name)}${t.ordem?`<br><span class="muted">Ordem ${esc(t.ordem)}</span>`:''}</td><td>${esc(t.area)}<br><span class="muted">${esc(t.equip)}</span></td><td>${fmtDate(t.ini)}${t.fim!==t.ini?' → '+fmtDate(t.fim):''}</td><td><b>${t.pct}%</b><div class="pbar"><i style="width:${t.pct}%;background:${s.cor}"></i></div></td><td style="color:${s.cor};font-weight:700">${s.txt}</td><td>${esc([t.obs,t.acao].filter(Boolean).join(' · '))}${t.upd?`<br><span class="muted">${fmtDT(t.upd)}${t.updBy?' · '+esc(t.updBy):''}</span>`:''}</td></tr>`}).join('')}</tbody></table>${foot(3+p)}</section>`;
+  }
+  // fotos
+  const fotos=tk.filter(t=>t.foto);
+  if(fotos.length)html+=`<section class="page"><h1>REGISTRO FOTOGRÁFICO</h1><div class="fotos">${fotos.slice(0,8).map(t=>`<div><img src="${t.foto}"><div class="small"><b>#${esc(t.item)}</b> ${esc(t.name)} · ${t.pct}%</div></div>`).join('')}</div>${fotos.length>8?`<div class="small">+${fotos.length-8} fotos não exibidas.</div>`:''}<div class="foot"><span>Inventário 2026</span><span>Anexo</span></div></section>`;
+  const css=`@page{size:A4 landscape;margin:0}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#1a1d23;background:#888}
   :root{--border:#e5e7eb;--muted:#6b7280;--planned:#94a3b8;--actual:#f5a01a;--dsm-purple:#8a3f97}
-  .page{width:297mm;height:210mm;padding:14mm 16mm 20mm;position:relative;overflow:hidden;background:#fff;margin:6mm auto;page-break-after:always;break-after:page}
+  .page{width:297mm;height:210mm;padding:13mm 15mm 18mm;position:relative;overflow:hidden;background:#fff;margin:6mm auto;page-break-after:always;break-after:page}
   .page::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#1ea7e1 0 25%,#1c3f94 25% 50%,#f5a01a 50% 75%,#5bb947 75% 100%)}
-  h1{font-size:22px;margin:0 0 6px;color:#1c3f94}h2{font-size:17px;margin:0 0 8px}h3{margin:0 0 6px;font-size:14px}
-  .small{font-size:10.5px;color:#4b5563;margin:2px 0}.muted{color:#6b7280;font-size:11px}.c{text-align:center}
-  .box{margin-top:14px}.boxh{background:#eef1f6;border:1px solid #cfd6e2;font-size:9.5px;font-weight:700;padding:4px 8px;color:#1c3f94}
-  .box ul{margin:8px 0;padding-left:18px;font-size:12px;line-height:1.9;font-weight:600}.box p{font-size:11px;margin:6px 8px}
-  .chart{border:1px solid #e5e7eb;border-radius:6px;padding:10px 16px;margin:10px 0}.chart svg{width:100%;height:118mm;display:block;overflow:visible}
+  h1{font-size:19px;margin:0 0 5px;color:#1c3f94}.small{font-size:10.5px;color:#4b5563;margin:2px 0}.muted{color:#6b7280;font-size:9.5px}
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0}.kpis div{border:1px solid #e5e7eb;border-top:3px solid #1ea7e1;border-radius:6px;padding:7px 9px;font-size:10px;color:#6b7280}.kpis b{display:block;font-size:18px;color:#1c3f94}
+  .boxh{background:#eef1f6;border:1px solid #cfd6e2;font-size:9.5px;font-weight:700;padding:4px 8px;color:#1c3f94}
+  table{width:100%;border-collapse:collapse;font-size:10.5px}th{background:#1c3f94;color:#fff;text-align:left;padding:4px 6px;font-size:9px}td{padding:4px 6px;border-bottom:1px solid #e5e7eb;vertical-align:top}
+  table.lst td{font-size:9.5px;padding:3.5px 6px}
+  .chart{border:1px solid #e5e7eb;border-radius:6px;padding:10px 16px;margin:10px 0}.chart svg{width:100%;height:128mm;display:block;overflow:visible}
   .legend{display:flex;gap:16px;font-size:11px;color:#6b7280}.legend i{display:inline-block;width:16px;height:3px;margin-right:4px;vertical-align:middle}
-  .top{display:flex;justify-content:space-between;border-bottom:2px solid #1c3f94;padding-bottom:6px;margin-bottom:10px;color:#1c3f94}
-  table{width:100%;border-collapse:collapse;font-size:11px}th{background:#1c3f94;color:#fff;text-align:left;padding:5px 7px;font-size:9.5px}td{padding:6px 7px;border-bottom:1px solid #e5e7eb}
-  .pbar{height:9px;background:#eef1f6;border-radius:6px;overflow:hidden;margin:8px 0 2px}.pbar i{display:block;height:100%}
-  .two{display:flex;gap:12px;margin-top:8px}.col{flex:1;display:flex;flex-direction:column}
-  .foto{border:1px solid #e5e7eb;height:62mm;display:flex;align-items:center;justify-content:center;overflow:hidden}.foto img{max-width:100%;max-height:100%;object-fit:contain}
-  .obs{border:1px solid #e5e7eb;height:62mm;padding:6px 8px;font-size:11px;overflow:hidden;white-space:pre-wrap}.obs p{margin:0 0 6px}
-  .info{display:grid;grid-template-columns:1fr 1fr;gap:3px 20px;font-size:10.5px;padding:6px 8px;border:1px solid #e5e7eb;border-top:none}
-  .status{margin-top:6px;font-size:10.5px;background:#f6f7f9;padding:5px 8px;border-left:4px solid #1c3f94}
-  .foot{position:absolute;left:16mm;right:16mm;bottom:9mm;display:flex;justify-content:space-between;font-size:8.5px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:3px}
+  .pbar{height:5px;background:#eef1f6;border-radius:4px;overflow:hidden;margin-top:2px}.pbar i{display:block;height:100%}
+  .fotos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.fotos img{width:100%;height:55mm;object-fit:cover;border:1px solid #e5e7eb}
+  .foot{position:absolute;left:15mm;right:15mm;bottom:8mm;display:flex;justify-content:space-between;font-size:8.5px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:3px}
   .tb{position:sticky;top:0;background:#1c3f94;color:#fff;padding:8px 14px;display:flex;gap:10px;align-items:center;justify-content:center;font-size:13px;z-index:9}
   .tb button{background:#f5a01a;border:none;color:#fff;padding:7px 14px;border-radius:6px;font-weight:700;cursor:pointer}
   @media print{body{background:#fff}.page{margin:0}.tb{display:none}}`;
-  const nomeArq='relatorio-'+norm(s.name).replace(/\W+/g,'-')+'-'+s.date;
-  const docHtml=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${nomeArq}</title><style>${css}</style></head><body>
-    <div class="tb">Relatório: ${esc(s.name)} — ${total} páginas <button onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button></div>${html}
-    <script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>`;
+  const doc=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>relatorio-inventario-2026</title><style>${css}</style></head><body><div class="tb">Relatório Inventário 2026 <button onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button></div>${html}<script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>`;
   const w=window.open('','_blank');
-  if(!w){baixar(new Blob([docHtml],{type:'text/html'}),nomeArq+'.html');alert('Pop-up bloqueado: o relatório foi baixado como arquivo. Abra-o e use Ctrl+P → Salvar como PDF.');return}
-  w.document.open();w.document.write(docHtml);w.document.close();
+  if(!w){baixar(new Blob([doc],{type:'text/html'}),'relatorio-inventario-2026.html');alert('Pop-up bloqueado: o relatório foi baixado como arquivo. Abra-o e use Ctrl+P → Salvar como PDF.');return}
+  w.document.open();w.document.write(doc);w.document.close();
 }
 $('#expRel').onclick=gerarRelatorio;
 $('#printBtn').onclick=()=>window.print();
-$('#expJson').onclick=()=>baixar(new Blob([JSON.stringify(DB)],{type:'application/json'}),'backup-execucao-paradas.json');
-$('#impJsonBtn').onclick=()=>$('#impJson').click();
-$('#impJson').onchange=async e=>{
-  const f=e.target.files[0];if(!f)return;
-  try{const r=JSON.parse(await f.text());if(!r||!Array.isArray(r.stops))throw new Error('arquivo inválido');
-    if(confirm('Substituir os dados atuais pelo backup?')){DB=r;save();refreshAll()}}
-  catch(err){alert('Não foi possível restaurar: '+err.message)}
-  e.target.value='';
-};
 
 /* ===================== abas ===================== */
-function setTab(t){
-  $('#tabProg').hidden=t!=='prog';$('#tabExec').hidden=t!=='exec';
+let TAB='painel';
+function setTab(t){TAB=t;
+  $('#tabPainel').hidden=t!=='painel';$('#tabAtiv').hidden=t!=='ativ';$('#tabCfg').hidden=t!=='cfg';
+  $('#filters').hidden=t==='cfg';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
-  if(t==='exec')renderExec();
-  window.scrollTo({top:0});
+  renderAll();window.scrollTo({top:0});
 }
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
-function refreshAll(){renderStopsList();if(!$('#tabExec').hidden)renderExec()}
-window.__paradasGet=()=>DB;
-window.__paradasSet=data=>{DB=data;renderStopsList();if(!$('#tabExec').hidden)renderExec()};
-renderStopsList();
+function renderAll(){if(TAB==='painel')renderPainel();if(TAB==='ativ')renderList()}
+setInterval(()=>{if(TAB==='painel')renderPainel()},300000); // vira o dia sozinho
+
+/* ponte com o Firebase */
+window.__invGet=()=>DB;
+window.__invDirty=()=>{const a=[...dirty];dirty.clear();return a};
+window.__invRequeue=ids=>ids.forEach(i=>dirty.add(i));
+window.__invApply=(changes,full)=>{
+  if(full){const loc=new Map(DB.tasks.map(t=>[t.id,t]));
+    DB.tasks=changes.filter(c=>!c.removed).map(c=>dirty.has(c.id)&&loc.get(c.id)?loc.get(c.id):c.data);
+    for(const id of dirty)if(!DB.tasks.some(t=>t.id===id)&&loc.get(id))DB.tasks.push(loc.get(id))}
+  else for(const c of changes){
+    const i=DB.tasks.findIndex(t=>t.id===c.id);
+    if(c.removed){if(i>=0)DB.tasks.splice(i,1)}
+    else if(dirty.has(c.id)){/* edição local pendente tem prioridade */}
+    else if(i>=0)DB.tasks[i]=c.data;else DB.tasks.push(c.data);
+  }
+  persistLocal();fillFilters();renderAll();
+};
+(()=>{const w=localStorage.getItem(WHO_KEY)||'';if(w&&w!=='PPCM')F.lider=w})();
+fillFilters();renderAll();
 </script>
 
-
-<!-- Firebase: sincronização das paradas em tempo real -->
+<!-- Firebase: cada atividade é um documento, então vários líderes podem lançar ao mesmo tempo -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { initializeFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { initializeFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAfeiHITnoS6MGc2zCHkCHN_s3CFM3F1G4",
@@ -794,128 +732,77 @@ const firebaseConfig = {
   messagingSenderId: "547969425495",
   appId: "1:547969425495:web:b8bfaae5fc2b048cdec312"
 };
-
-const COL = 'paradas_execucao';
-const LS_KEY = 'execucao_paradas_v1';
-const MAX_DOC_BYTES = 900000; // limite do Firestore é ~1 MB por documento
+const COL = 'inventario_2026';
+const MAX_DOC = 900000;
 
 const statusEl = document.createElement('span');
-statusEl.id = 'firebaseStatus';
-statusEl.style.cssText = 'display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);cursor:pointer';
+statusEl.style.cssText = 'margin-left:6px;font-size:11px;cursor:pointer';
 statusEl.title = 'Clique para reenviar os dados agora';
-const subEl = document.querySelector('.sub');
-if (subEl) subEl.appendChild(statusEl);
-const setStatus = (msg, color='var(--muted)') => { statusEl.textContent = ' · Firebase: ' + msg; statusEl.style.color = color; };
+document.querySelector('#subInfo').appendChild(statusEl);
+const setStatus = (m, c='var(--muted)') => { statusEl.textContent = ' · Nuvem: ' + m; statusEl.style.color = c; };
+function errMsg(err){const c=(err&&err.code)||'',m=(err&&err.message)||'';
+  if(c.includes('permission-denied'))return 'permissão negada — libere a coleção "inventario_2026" nas regras do Firestore';
+  if(c.includes('unavailable')||c.includes('deadline'))return 'sem conexão (rede bloqueando o Firebase?)';
+  if(/size|exceed|too large/i.test(m))return 'foto grande demais';
+  return 'erro: '+(c||m||'desconhecido');}
 
-function errMsg(err) {
-  const code = (err && err.code) || '';
-  const m = (err && err.message) || '';
-  if (code.includes('permission-denied')) return 'permissão negada — publique as regras do Firestore';
-  if (code.includes('unavailable') || code.includes('deadline')) return 'sem conexão com o servidor (rede bloqueando o Firebase?)';
-  if (code.includes('invalid-argument') || /size|exceed|too large/i.test(m)) return 'dados grandes demais (muitas fotos) — remova fotos';
-  if (code.includes('failed-precondition') || code.includes('not-found')) return 'banco Firestore não criado neste projeto';
-  return 'erro: ' + (code || m || 'desconhecido');
+let db, ready=false, timer=null;
+const strip = t => { const {_syncAt, ...rest} = t; return rest; };
+async function flush(){
+  if(!ready) return;
+  const ids = window.__invDirty(); if(!ids.length) return;
+  const DB = window.__invGet();
+  try{
+    setStatus('enviando...', '#e0a100');
+    const jobs=[];
+    for(const id of ids){
+      const t = DB.tasks.find(x=>x.id===id); if(!t) continue;
+      let data = {...t};
+      if(JSON.stringify(data).length > MAX_DOC) data.foto = null;
+      jobs.push(setDoc(doc(db, COL, id), {...data, _syncAt: serverTimestamp()}));
+    }
+    await Promise.all(jobs);
+    setStatus('sincronizado', '#5bb947');
+  }catch(err){ console.error(err); window.__invRequeue(ids); setStatus(errMsg(err), '#d64545'); }
 }
-
-let db, ready = false, applyingRemote = false, writeTimer = null;
-let remoteIds = new Set();
-const localDB = () => window.__paradasGet ? window.__paradasGet() : {stops:[],sel:''};
-
-function applyRemote(cloudStops, label) {
-  applyingRemote = true;
-  try {
-    const local = localDB();
-    const selected = cloudStops.some(s => s.id === local.sel) ? local.sel : (cloudStops[0]?.id || '');
-    const restored = {stops:cloudStops, sel:selected};
-    if (window.__paradasSet) window.__paradasSet(restored);
-    try { localStorage.setItem(LS_KEY, JSON.stringify(restored)); } catch (e) {}
-  } finally { applyingRemote = false; }
-  setStatus(label, '#4ADE80');
-}
-
-try {
+try{
   setStatus('conectando...');
   const app = initializeApp(firebaseConfig);
-  // Compatibilidade com redes corporativas/proxy: força long polling no Firestore.
   db = initializeFirestore(app, { experimentalForceLongPolling: true, ignoreUndefinedProperties: true });
-  const ref = collection(db, COL);
+  window.__fbFlush = () => { clearTimeout(timer); timer = setTimeout(flush, 600); };
+  window.__fbDelete = id => { if(ready) deleteDoc(doc(db, COL, id)).catch(e=>setStatus(errMsg(e), '#d64545')); };
+  statusEl.onclick = () => { if(ready){ window.__invRequeue(window.__invGet().tasks.map(t=>t.id)); flush(); } else location.reload(); };
+  setTimeout(()=>{ if(!ready) setStatus('sem resposta após 12 s — trabalhando só neste navegador', '#e0a100'); }, 12000);
 
-  // Se em 12 s o servidor não responder, avisa em vez de ficar parado.
-  setTimeout(() => {
-    if (!ready) setStatus('sem resposta após 12 s — confira rede, regras Firestore e configuração', '#FBBF24');
-  }, 12000);
-
-  window.__firebaseSave = data => {
-    if (!ready || applyingRemote) return;
-    clearTimeout(writeTimer);
-    writeTimer = setTimeout(async () => {
-      const slow = setTimeout(() => setStatus('enviando... sem resposta do servidor (rede/regras?)', '#FBBF24'), 10000);
-      try {
-        setStatus('enviando...', '#FBBF24');
-        const stops = data.stops || [];
-        const current = new Set(stops.map(s => String(s.id)));
-        const jobs = [];
-        const tooBig = [];
-        for (const stop of stops) {
-          // Cada parada é um documento próprio.
-          const payload = {...stop, _syncAt: serverTimestamp()};
-          if (JSON.stringify(stop).length > MAX_DOC_BYTES) { tooBig.push(stop.name || stop.id); continue; }
-          jobs.push(setDoc(doc(db, COL, String(stop.id)), payload));
-        }
-        for (const id of remoteIds) if (!current.has(id)) jobs.push(deleteDoc(doc(db, COL, id)));
-        await Promise.all(jobs);
-        clearTimeout(slow);
-        remoteIds = current;
-        if (tooBig.length) setStatus('parada(s) grande(s) demais para sincronizar: ' + tooBig.join(', ') + ' — remova fotos', '#F87171');
-        else setStatus('conectado · sincronizado', '#4ADE80');
-      } catch (err) {
-        clearTimeout(slow);
-        console.error('Firebase write error:', err);
-        setStatus(errMsg(err), '#F87171');
-      }
-    }, 500);
-  };
-
-  statusEl.onclick = () => {
-    if (ready) {
-      window.__firebaseSave(localDB());
-    } else {
-      setStatus('tentando reconectar…', '#FBBF24');
-      window.location.reload();
-    }
-  };
-
-  onSnapshot(ref, snapshot => {
-    // Não substitui os dados locais enquanto uma gravação deste navegador ainda está pendente.
-    if (snapshot.metadata.hasPendingWrites) return;
-    // Primeiro retorno vazio vindo só do cache: espera o servidor responder de verdade.
-    if (!ready && snapshot.metadata.fromCache && snapshot.empty) { setStatus('aguardando o servidor...'); return; }
-
-    const cloudStops = snapshot.docs.map(d => { const {_syncAt, ...rest} = d.data(); return {...rest, id:d.id}; });
-    remoteIds = new Set(snapshot.docs.map(d => d.id));
-
+  onSnapshot(collection(db, COL), async snap => {
+    if (snap.metadata.hasPendingWrites) return;
+    if (!ready && snap.metadata.fromCache && snap.empty) { setStatus('aguardando o servidor...'); return; }
     if (!ready) {
       ready = true;
-      if (cloudStops.length) {
-        applyRemote(cloudStops, 'conectado · dados da nuvem carregados');
+      if (snap.empty) {
+        // primeira vez: envia a programação inicial
+        setStatus('primeira carga — enviando atividades...', '#e0a100');
+        const tasks = window.__invGet().tasks;
+        try{
+          for (let i=0;i<tasks.length;i+=400){
+            const b = writeBatch(db);
+            tasks.slice(i,i+400).forEach(t => b.set(doc(db, COL, t.id), {...t, _syncAt: serverTimestamp()}));
+            await b.commit();
+          }
+          setStatus('sincronizado', '#5bb947');
+        }catch(err){ console.error(err); setStatus(errMsg(err), '#d64545'); }
       } else {
-        setStatus('conectado · enviando dados locais', '#4ADE80');
-        window.__firebaseSave(localDB());
+        window.__invApply(snap.docs.map(d=>({id:d.id, data:{...strip(d.data()), id:d.id}})), true);
+        setStatus('conectado · tempo real', '#5bb947');
+        flush();
       }
       return;
     }
-    // Atualizações remotas em tempo real.
-    applyRemote(cloudStops, 'conectado · tempo real');
-  }, err => {
-    console.error('Firebase listener error:', err);
-    ready = false;
-    setStatus(errMsg(err), '#F87171');
-  });
-} catch (err) {
-  console.error('Firebase initialization error:', err);
-  setStatus('não inicializado: ' + (err.message || err), '#F87171');
-}
+    const ch = snap.docChanges().map(c => ({id:c.doc.id, removed:c.type==='removed', data:{...strip(c.doc.data()), id:c.doc.id}}));
+    if (ch.length) window.__invApply(ch, false);
+    setStatus('conectado · tempo real', '#5bb947');
+  }, err => { console.error(err); setStatus(errMsg(err), '#d64545'); });
+}catch(err){ console.error(err); setStatus('não inicializado', '#d64545'); }
 </script>
-
 </body>
 </html>
