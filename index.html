@@ -171,7 +171,7 @@ details.det div{white-space:pre-wrap;margin-top:4px;color:var(--muted)}
 
 <!-- ================= ATIVIDADES ================= -->
 <section id="tabAtiv" hidden>
-  <div class="who noprint">
+  <div class="who noprint" style="display:none">
     <strong style="font-size:12px">👷 Lançando como:</strong>
     <select id="whoSel"></select>
     <span class="muted">Atualize o % a qualquer momento — a data e hora são registradas sozinhas.</span>
@@ -526,7 +526,6 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   const el=e.target;
   if(el.matches('[data-pct]')){const t=byId(el.dataset.pct);if(!t)return;
-    if(!who()&&!window.__avisoWho){window.__avisoWho=1;alert('Dica: escolha seu nome em "Lançando como" para registrar quem atualizou.')}
     lancar(t,el.value);el.blur();renderList(true);renderPainel();}
   else if(el.matches('[data-foto]')&&el.files[0])processarFoto(el.files[0],el.dataset.foto);
 });
@@ -715,7 +714,6 @@ window.__invApply=(changes,full)=>{
   }
   persistLocal();fillFilters();renderAll();
 };
-(()=>{const w=localStorage.getItem(WHO_KEY)||'';if(w&&w!=='PPCM')F.lider=w})();
 fillFilters();renderAll();
 </script>
 
