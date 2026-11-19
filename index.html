@@ -120,6 +120,13 @@ svg{width:100%;height:auto;overflow:visible;display:block}
 details.det{margin-top:6px;font-size:11.5px}
 details.det summary{cursor:pointer;color:var(--accent);font-size:11px}
 details.det div{white-space:pre-wrap;margin-top:4px;color:var(--muted)}
+.editBtn{border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:8px}
+.stp.adic{background:#8a3f97}
+.modalBg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto}
+.modalBg[hidden]{display:none}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;width:100%;max-width:760px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.modal h2{display:flex;justify-content:space-between;align-items:center}
+.modal .x{border:none;background:transparent;color:var(--muted);font-size:20px;cursor:pointer}
 .delTask{border:1px solid var(--red);background:transparent;color:var(--red);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:auto}
 @media(max-width:820px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.filters .in{grid-template-columns:1fr 1fr}.filters{top:64px}}
 @media(max-width:520px){.pctbox{min-width:100%}.logo small{display:none}}
@@ -187,7 +194,7 @@ details.det div{white-space:pre-wrap;margin-top:4px;color:var(--muted)}
   <div class="controls">
     <label>Mostrar<select id="fStatus">
       <option value="">Todas</option><option value="pend">Não iniciadas (0%)</option><option value="and">Em andamento</option>
-      <option value="ok">Concluídas (100%)</option><option value="late">Atrasadas (passou da data fim)</option><option value="hoje">Programadas para hoje</option></select></label>
+      <option value="ok">Concluídas (100%)</option><option value="late">Atrasadas (passou da data fim)</option><option value="hoje">Programadas para hoje</option><option value="adic">Adicionais (fora da programação)</option></select></label>
     <label>Pesquisar<input type="text" id="busca" placeholder="🔎 ordem, descrição, equipamento, executante..."></label>
   </div>
   <div class="muted" id="count" style="margin:4px 0 8px"></div>
@@ -205,7 +212,7 @@ details.det div{white-space:pre-wrap;margin-top:4px;color:var(--muted)}
   </div>
 
   <div class="panel">
-    <h2>Cadastrar atividade fora da planilha</h2>
+    <h2>Cadastrar atividade adicional (fora da programação)</h2>
     <div class="formgrid">
       <label style="grid-column:span 2">Descrição *<input id="mDesc" placeholder="Ex.: Troca de rolamento do motor M-101"></label>
       <label>Líder *<input id="mLider" list="lideresList" placeholder="Ex.: RAFAEL GALLY"></label>
@@ -231,6 +238,41 @@ details.det div{white-space:pre-wrap;margin-top:4px;color:var(--muted)}
     </div>
   </div>
 </section>
+</div>
+<div class="modalBg" id="pwdBg" hidden>
+  <div class="modal" style="max-width:360px">
+    <h2>🔒 Alterar atividade <button class="x" data-close="pwdBg" type="button">✕</button></h2>
+    <label>Senha<input type="password" id="pwdIn" autocomplete="off" placeholder="Digite a senha"></label>
+    <div class="muted" id="pwdMsg" style="margin-top:6px"></div>
+    <div class="actionsrow"><button class="primary" id="pwdOk" type="button">Entrar</button><button class="secondary" data-close="pwdBg" type="button">Cancelar</button></div>
+  </div>
+</div>
+<div class="modalBg" id="edBg" hidden>
+  <div class="modal">
+    <h2><span id="edTitle">Alterar atividade</span> <button class="x" data-close="edBg" type="button">✕</button></h2>
+    <div class="muted" style="margin-bottom:8px">O % lançado, o histórico, as observações e as fotos são mantidos.</div>
+    <div class="formgrid">
+      <label style="grid-column:span 4">Descrição *<input id="eName"></label>
+      <label>Líder *<input id="eLider" list="lideresList"></label>
+      <label>Área<input id="eArea" list="areasList"></label>
+      <label>Equipamento<input id="eEquip"></label>
+      <label>Ordem<input id="eOrdem"></label>
+      <label>Data início *<input id="eIni" type="date"></label>
+      <label>Data fim *<input id="eFim" type="date"></label>
+      <label>Tipo<input id="eTipo" placeholder="PERFORMANCE, SHE..."></label>
+      <label>Turno<input id="eTurno"></label>
+      <label>HH total<input id="eHH" type="number" min="0" step="0.5"></label>
+      <label>Fornecedor<input id="eForn"></label>
+      <label style="grid-column:span 2">Executante(s)<input id="eExec"></label>
+      <label style="grid-column:span 4">Recursos<input id="eRec"></label>
+      <label style="grid-column:span 4">Detalhamento<textarea id="eDet" rows="3"></textarea></label>
+    </div>
+    <div class="actionsrow">
+      <button class="primary" id="edSave" type="button">💾 Salvar alterações</button>
+      <button class="secondary" data-close="edBg" type="button">Cancelar</button>
+      <button class="delTask" id="edDel" type="button" hidden>🗑 Excluir atividade adicional</button>
+    </div>
+  </div>
 </div>
 <datalist id="lideresList"></datalist><datalist id="areasList"></datalist>
 
@@ -357,7 +399,11 @@ function range(tasks){
   return [a,b];
 }
 function stAtv(t){
-  const p=+t.pct||0,h=todayKey();
+  const p=+t.pct||0,h=todayKey(),r=stBase(t,p,h);
+  if(t.manual)r.adic=true;
+  return r;
+}
+function stBase(t,p,h){
   if(p>=100)return {k:'ok',txt:'Concluída',cor:'#5bb947'};
   if((t.fim||t.ini)<h)return {k:'late',txt:'Atrasada',cor:'#d64545'};
   if(p>0)return {k:'and',txt:'Em andamento',cor:'#f5a01a'};
@@ -469,6 +515,7 @@ function listaFiltrada(){
     if(f==='ok'&&p<100)return false;
     if(f==='late'&&k!=='late')return false;
     if(f==='hoje'&&!(inDay(t,todayKey())&&p<100))return false;
+    if(f==='adic'&&!t.manual)return false;
     if(q&&!norm([t.item,t.ordem,t.name,t.det,t.equip,t.area,t.lider,t.exec,t.forn,t.obs,t.acao].join(' ')).includes(q))return false;
     return true;
   }).sort((a,b)=>a.ini.localeCompare(b.ini)||String(a.lider).localeCompare(b.lider)||(+a.item||0)-(+b.item||0));
@@ -481,13 +528,13 @@ function rowHtml(t){
       <div class="info">
         <div class="name">${t.item!==''&&t.item!=null?`<span class="muted">#${esc(t.item)}</span> `:''}${esc(t.name)}</div>
         <div class="meta">
-          <span class="stp" style="background:${s.cor}">${s.txt}</span>
+          ${t.manual?'<span class="stp adic">Adicional</span>':''}<span class="stp" style="background:${s.cor}">${s.txt}</span>
           <span class="tag lider">${esc(t.lider||'sem líder')}</span>
           <span class="tag">📅 ${datas}</span>
           ${t.area?`<span class="tag">${esc(t.area)}</span>`:''}${t.equip?`<span class="tag">${esc(t.equip)}</span>`:''}
           ${t.ordem?`<span class="tag">Ordem ${esc(t.ordem)}</span>`:''}${t.tipo?`<span class="tag">${esc(t.tipo)}</span>`:''}
           ${t.turno?`<span class="tag">Turno ${esc(t.turno)}</span>`:''}${t.hh?`<span class="tag">${esc(t.hh)} HH</span>`:''}
-          ${t.forn&&t.forn!=='INTERNO'?`<span class="tag">${esc(t.forn)}</span>`:''}${t.manual?'<span class="tag manual">Manual</span>':''}
+          ${t.forn&&t.forn!=='INTERNO'?`<span class="tag">${esc(t.forn)}</span>`:''}${t.edited?`<span class="tag" title="Alterada em ${fmtDT(t.edited)}">✏️ alterada</span>`:''}
         </div>
       </div>
       <div class="pctbox">
@@ -497,7 +544,7 @@ function rowHtml(t){
       </div>
     </div>
     <div class="bar"><i data-barfor="${id}" style="width:${+t.pct||0}%"></i></div>
-    <div class="upd">${t.upd?`🕒 Atualizado em ${fmtDT(t.upd)}${t.updBy?' por '+esc(t.updBy):''} · ${(t.hist||[]).length} lançamento(s)`:'Sem lançamento ainda'}${(t.hist||[]).length?` · <span class="lnk" data-undo="${id}">desfazer último</span>`:''}</div>
+    <div class="upd">${t.upd?`🕒 Atualizado em ${fmtDT(t.upd)}${t.updBy?' por '+esc(t.updBy):''} · ${(t.hist||[]).length} lançamento(s)`:'Sem lançamento ainda'}${(t.hist||[]).length?` · <span class="lnk" data-undo="${id}">desfazer último</span>`:''}<button class="editBtn noprint" data-edit="${id}" type="button">✏️ Alterar</button></div>
     ${(t.det||t.exec||t.rec||t.ptw||t.pedido)?`<details class="det"><summary>Detalhes da programação</summary><div>${t.exec?'<b>Executante(s):</b> '+esc(t.exec)+'\n':''}${t.rec?'<b>Recursos:</b> '+esc(t.rec)+'\n':''}${t.ptw?'<b>PTW:</b> '+esc(t.ptw)+'  ':''}${t.pedido&&t.pedido!=='N/A'?'<b>Pedido:</b> '+esc(t.pedido)+'  ':''}${t.plano&&t.plano!=='N/A'?'<b>Plano:</b> '+esc(t.plano):''}${t.det?'\n\n'+esc(t.det):''}</div></details>`:''}
     <div class="obsRow">
       <input type="text" data-obs="${id}" placeholder="Observações..." value="${esc(t.obs)}">
@@ -505,7 +552,6 @@ function rowHtml(t){
       <label class="fotoBtn" title="Anexar foto">📷<input type="file" accept="image/*" capture="environment" data-foto="${id}" hidden></label>
     </div>
     ${t.foto?`<div class="fotoPrev"><img src="${t.foto}" alt="foto"><span class="lnk" data-rmfoto="${id}">✕ remover foto</span></div>`:''}
-    ${t.manual?`<div style="display:flex;margin-top:6px"><button class="delTask" data-delt="${id}">🗑 Excluir atividade manual</button></div>`:''}
   </div>`;
 }
 let pendingList=false;
@@ -554,9 +600,6 @@ document.addEventListener('click',e=>{
     if(!confirm('Desfazer o último lançamento desta atividade?'))return;
     t.hist.pop();const l=t.hist[t.hist.length-1];t.pct=l?l.p:0;t.upd=l?l.t:null;t.updBy=l?(l.by||''):'';save([t.id]);renderList(true);renderPainel()}
   else if(el.matches('[data-rmfoto]')){const t=byId(el.dataset.rmfoto);if(t){t.foto=null;save([t.id]);renderList(true)}}
-  else if(el.matches('[data-delt]')){const t=byId(el.dataset.delt);if(!t)return;
-    if(!confirm(`Excluir a atividade manual "${t.name}"?`))return;
-    DB.tasks=DB.tasks.filter(x=>x.id!==t.id);persistLocal();if(window.__fbDelete)window.__fbDelete(t.id);fillFilters();renderAll()}
 });
 function processarFoto(file,id){
   const t=byId(id);if(!t)return;
@@ -573,6 +616,55 @@ function processarFoto(file,id){
 $('#fStatus').onchange=()=>renderList(true);
 $('#busca').oninput=()=>renderList(true);
 
+/* ===================== alterar atividade (com senha) ===================== */
+const SENHA='invent26';
+let edId=null;
+function senhaOk(){try{return sessionStorage.getItem('inv26_ok')==='1'}catch(_){return false}}
+function abrir(id){$('#'+id).hidden=false}
+function fechar(id){$('#'+id).hidden=true}
+function pedirEdicao(id){
+  edId=id;
+  if(senhaOk()){abrirEditor();return}
+  $('#pwdIn').value='';$('#pwdMsg').textContent='';abrir('pwdBg');setTimeout(()=>$('#pwdIn').focus(),50);
+}
+function conferirSenha(){
+  if($('#pwdIn').value.trim()===SENHA){try{sessionStorage.setItem('inv26_ok','1')}catch(_){}fechar('pwdBg');abrirEditor()}
+  else{$('#pwdMsg').innerHTML='<span style="color:var(--red)">Senha incorreta.</span>';$('#pwdIn').select()}
+}
+$('#pwdOk').onclick=conferirSenha;
+$('#pwdIn').onkeydown=e=>{if(e.key==='Enter')conferirSenha()};
+const EF={eName:'name',eLider:'lider',eArea:'area',eEquip:'equip',eOrdem:'ordem',eIni:'ini',eFim:'fim',eTipo:'tipo',eTurno:'turno',eHH:'hh',eForn:'forn',eExec:'exec',eRec:'rec',eDet:'det'};
+function abrirEditor(){
+  const t=byId(edId);if(!t)return;
+  for(const [k,f] of Object.entries(EF))$('#'+k).value=t[f]??'';
+  $('#edTitle').textContent=(t.manual?'Alterar atividade adicional':'Alterar atividade')+(t.item!==''&&t.item!=null?' #'+t.item:'');
+  $('#edDel').hidden=!t.manual;
+  abrir('edBg');setTimeout(()=>$('#eName').focus(),50);
+}
+$('#edSave').onclick=()=>{
+  const t=byId(edId);if(!t)return;
+  const v={};for(const [k,f] of Object.entries(EF))v[f]=$('#'+k).value;
+  v.name=clean(v.name);v.lider=clean(v.lider).toUpperCase();v.area=clean(v.area).toUpperCase();
+  if(!v.name||!v.lider||!v.ini){alert('Preencha descrição, líder e data início.');return}
+  if(!v.fim)v.fim=v.ini;if(v.fim<v.ini){alert('A data fim não pode ser antes da data início.');return}
+  v.hh=+v.hh||0;['equip','ordem','tipo','turno','forn','exec','rec'].forEach(f=>v[f]=clean(v[f]));v.det=String(v.det||'').trim();
+  // id e chave continuam os mesmos: % lançado, histórico, observações e fotos ficam
+  Object.assign(t,v,{edited:Date.now()});
+  save([t.id]);fechar('edBg');fillFilters();renderAll();
+};
+$('#edDel').onclick=()=>{
+  const t=byId(edId);if(!t||!t.manual)return;
+  if(!confirm(`Excluir a atividade adicional "${t.name}"?`))return;
+  DB.tasks=DB.tasks.filter(x=>x.id!==t.id);persistLocal();if(window.__fbDelete)window.__fbDelete(t.id);
+  fechar('edBg');fillFilters();renderAll();
+};
+document.addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]');if(ed){pedirEdicao(ed.dataset.edit);return}
+  const c=e.target.closest('[data-close]');if(c){fechar(c.dataset.close);return}
+  if(e.target.classList&&e.target.classList.contains('modalBg'))e.target.hidden=true;
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){fechar('pwdBg');fechar('edBg')}});
+
 /* ===================== atividade manual ===================== */
 $('#saveManual').onclick=()=>{
   const name=clean($('#mDesc').value),lider=clean($('#mLider').value).toUpperCase(),ini=$('#mIni').value;
@@ -581,7 +673,7 @@ $('#saveManual').onclick=()=>{
   const id=uid('m');
   DB.tasks.push(newTask({id,key:id,manual:true,name,lider,area:clean($('#mArea').value).toUpperCase(),equip:clean($('#mEquip').value),ordem:clean($('#mOrdem').value),ini,fim,hh:+$('#mHH').value||0,exec:clean($('#mExec').value),item:''}));
   save([id]);['mDesc','mEquip','mOrdem','mHH','mExec'].forEach(i=>$('#'+i).value='');
-  fillFilters();renderAll();alert('Atividade cadastrada. Ela já entra na curva pelas datas informadas.');
+  fillFilters();renderAll();alert('Atividade adicional cadastrada. Ela aparece com o status "Adicional" e já entra na curva pelas datas informadas.');
 };
 
 /* ===================== importação da planilha ===================== */
@@ -622,7 +714,7 @@ $('#sheetFile').onchange=async e=>{
     const keys=new Set(rows.map(r=>r.key)),fora=DB.tasks.filter(t=>!t.manual&&!keys.has(t.key));
     PEND={rows,fora};
     $('#importMsg').textContent=`Aba "${tb.name}": ${rows.length} atividades lidas.`;
-    $('#importPrev').innerHTML=`<div class="tablewrap"><table><tr><th>Novas</th><th>Já existentes (dados atualizados, % mantido)</th><th>Não estão mais na planilha</th></tr><tr><td><b>${novas.length}</b></td><td><b>${atual.length}</b></td><td><b>${fora.length}</b></td></tr></table></div>`+
+    $('#importPrev').innerHTML=`<div class="tablewrap"><table><tr><th>Novas</th><th>Já existentes (dados atualizados, % mantido; as alteradas na tela não mudam)</th><th>Não estão mais na planilha</th></tr><tr><td><b>${novas.length}</b></td><td><b>${atual.length}</b></td><td><b>${fora.length}</b></td></tr></table></div>`+
       (fora.length?`<label style="margin-top:8px;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg)"><input type="checkbox" id="rmFora" style="width:auto;margin:0"> Remover as ${fora.length} que saíram da planilha (as que já têm lançamento são mantidas)</label>`:'');
     $('#importBtn').disabled=!rows.length;
   }catch(err){$('#importMsg').textContent='';alert('Não foi possível ler a planilha: '+err.message)}
@@ -630,7 +722,7 @@ $('#sheetFile').onchange=async e=>{
 $('#importBtn').onclick=()=>{
   if(!PEND)return;const have=new Map(DB.tasks.map(t=>[t.key,t])),ids=[];let add=0,upd=0,rm=0;
   for(const r of PEND.rows){const t=have.get(r.key);
-    if(t){const keep={pct:t.pct,hist:t.hist,upd:t.upd,updBy:t.updBy,obs:t.obs,acao:t.acao,foto:t.foto};Object.assign(t,newTask(r),keep);upd++;ids.push(t.id)}
+    if(t){if(t.edited){continue}const keep={pct:t.pct,hist:t.hist,upd:t.upd,updBy:t.updBy,obs:t.obs,acao:t.acao,foto:t.foto};Object.assign(t,newTask(r),keep);upd++;ids.push(t.id)}
     else{const n=newTask(r);DB.tasks.push(n);add++;ids.push(n.id)}}
   if($('#rmFora')&&$('#rmFora').checked){for(const t of PEND.fora)if(!(t.hist||[]).length){DB.tasks=DB.tasks.filter(x=>x!==t);if(window.__fbDelete)window.__fbDelete(t.id);rm++}}
   save(ids);PEND=null;$('#importBtn').disabled=true;$('#importPrev').innerHTML='';$('#sheetFile').value='';
@@ -649,7 +741,7 @@ $('#impJson').onchange=async e=>{const f=e.target.files[0];if(!f)return;
 $('#expCsv').onclick=()=>{
   const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   const cab=['Item','Líder','Área','Equipamento','Ordem','Descrição','Data início','Data fim','% executado','Status','Atualizado em','Por','Observações','Pendência/ação'];
-  const lin=filtered().map(t=>[t.item,t.lider,t.area,t.equip,t.ordem,t.name,fmtDate(t.ini),fmtDate(t.fim),t.pct,stAtv(t).txt,t.upd?fmtDT(t.upd):'',t.updBy,t.obs,t.acao].map(q).join(';'));
+  const lin=filtered().map(t=>[t.item,t.lider,t.area,t.equip,t.ordem,t.name,fmtDate(t.ini),fmtDate(t.fim),t.pct,(t.manual?'Adicional - ':'')+stAtv(t).txt,t.upd?fmtDT(t.upd):'',t.updBy,t.obs,t.acao].map(q).join(';'));
   baixar(new Blob(['﻿'+[cab.join(';'),...lin].join('\r\n')],{type:'text/csv'}),'status-inventario-2026.csv');
 };
 
@@ -673,7 +765,7 @@ function gerarRelatorio(){
     <div class="legend"><span><i style="background:#94a3b8"></i>Planejado</span><span><i style="background:#f5a01a"></i>Real</span></div></div>${foot(2)}</section>`;
   for(let p=0;p<Math.ceil(tk.length/14);p++){
     const part=tk.slice(p*14,p*14+14);
-    html+=`<section class="page"><h1>LISTA DE ATIVIDADES</h1><table class="lst"><thead><tr><th>#</th><th>Líder</th><th style="width:34%">Atividade</th><th>Área / Equip.</th><th>Datas</th><th>%</th><th>Status</th><th style="width:20%">Obs. / pendência</th></tr></thead><tbody>${part.map(t=>{const s=stAtv(t);return `<tr><td>${esc(t.item)}</td><td>${esc(t.lider)}</td><td>${esc(t.name)}${t.ordem?`<br><span class="muted">Ordem ${esc(t.ordem)}</span>`:''}</td><td>${esc(t.area)}<br><span class="muted">${esc(t.equip)}</span></td><td>${fmtDate(t.ini)}${t.fim!==t.ini?' → '+fmtDate(t.fim):''}</td><td><b>${t.pct}%</b><div class="pbar"><i style="width:${t.pct}%;background:${s.cor}"></i></div></td><td style="color:${s.cor};font-weight:700">${s.txt}</td><td>${esc([t.obs,t.acao].filter(Boolean).join(' · '))}${t.upd?`<br><span class="muted">${fmtDT(t.upd)}${t.updBy?' · '+esc(t.updBy):''}</span>`:''}</td></tr>`}).join('')}</tbody></table>${foot(3+p)}</section>`;
+    html+=`<section class="page"><h1>LISTA DE ATIVIDADES</h1><table class="lst"><thead><tr><th>#</th><th>Líder</th><th style="width:34%">Atividade</th><th>Área / Equip.</th><th>Datas</th><th>%</th><th>Status</th><th style="width:20%">Obs. / pendência</th></tr></thead><tbody>${part.map(t=>{const s=stAtv(t);return `<tr><td>${esc(t.item)}</td><td>${esc(t.lider)}</td><td>${esc(t.name)}${t.ordem?`<br><span class="muted">Ordem ${esc(t.ordem)}</span>`:''}</td><td>${esc(t.area)}<br><span class="muted">${esc(t.equip)}</span></td><td>${fmtDate(t.ini)}${t.fim!==t.ini?' → '+fmtDate(t.fim):''}</td><td><b>${t.pct}%</b><div class="pbar"><i style="width:${t.pct}%;background:${s.cor}"></i></div></td><td style="color:${s.cor};font-weight:700">${t.manual?'<span style="color:#8a3f97">Adicional</span><br>':''}${s.txt}</td><td>${esc([t.obs,t.acao].filter(Boolean).join(' · '))}${t.upd?`<br><span class="muted">${fmtDT(t.upd)}${t.updBy?' · '+esc(t.updBy):''}</span>`:''}</td></tr>`}).join('')}</tbody></table>${foot(3+p)}</section>`;
   }
   // fotos
   const fotos=tk.filter(t=>t.foto);
