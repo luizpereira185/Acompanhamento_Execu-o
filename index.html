@@ -67,6 +67,13 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .card:nth-child(2){border-top-color:var(--planned)}.card:nth-child(3){border-top-color:var(--dsm-orange)}.card:nth-child(4){border-top-color:var(--dsm-green)}.card:nth-child(5){border-top-color:var(--red)}
 .card b{display:block;font-size:21px;color:var(--brand)}
 .card span{color:var(--muted);font-size:11px}
+.areas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0 0 10px}
+.area{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--dsm-cyan);border-radius:10px;padding:9px 11px;cursor:pointer}
+.area.sel{outline:2px solid var(--accent)}
+.area .t{font-size:11px;font-weight:800;color:var(--brand);letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.area .v{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin:3px 0 5px}
+.area .v>b{font-size:19px}
+.area .v span{font-size:10.5px;color:var(--muted);text-align:right}
 .chartbox{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin:10px 0}
 .chartbox h3{margin:0 0 2px;font-size:14px;color:var(--brand)}
 svg{width:100%;height:auto;overflow:visible;display:block}
@@ -145,6 +152,7 @@ details.det div{white-space:pre-wrap;margin-top:4px;color:var(--muted)}
 <!-- ================= PAINEL ================= -->
 <section id="tabPainel">
   <div class="cards" id="cards"></div>
+  <div class="areas" id="areas"></div>
   <div class="chartbox">
     <h3 id="chartTitle">Curva S — Planejado x Real</h3>
     <div class="muted" id="chartSub"></div>
@@ -312,7 +320,7 @@ function fillFilters(){
   setOpts($('#whoSel'),'<option value="">— escolha seu nome —</option>'+lid.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('')+'<option value="PPCM">PPCM / Planejamento (ver todos)</option>',who);
   if(dd.length)$('#subInfo').firstChild&&($('#subInfo').childNodes[0].textContent=`Parada de Manutenção · Mairinque · ${fmtDate(dd[0])} a ${fmtDate(dd[dd.length-1])} · ${DB.tasks.length} atividades`);
 }
-function setF(k,v){F[k]=v;$('#f'+k[0].toUpperCase()+k.slice(1)).value=v;renderAll()}
+function setF(k,v){F[k]=v;const sel=$('#f'+k[0].toUpperCase()+k.slice(1)),o=[...sel.options].find(x=>norm(x.value)===norm(v));sel.value=o?o.value:'';renderAll()}
 $('#fLider').onchange=e=>setF('lider',e.target.value);
 $('#fDia').onchange=e=>setF('dia',e.target.value);
 $('#fArea').onchange=e=>setF('area',e.target.value);
@@ -420,6 +428,15 @@ function renderPainel(){
     <div class="card"><b>${ok}/${tk.length}</b><span>Concluídas</span></div>
     <div class="card"><b style="color:${late?'var(--red)':'var(--brand)'}">${late}</b><span>Atrasadas (passou da data fim)</span></div>
     <div class="card" style="border-top-color:${st.cor}"><b style="font-size:16px;color:${st.cor}">${st.label}</b><span>${st.det||'Status'}</span></div>`;
+  // cartões por área (respeitam líder e dia)
+  const baseA=DB.tasks.filter(t=>(!F.lider||eqN(t.lider,F.lider))&&(!F.dia||inDay(t,F.dia)));
+  $('#areas').innerHTML=uniq(baseA.map(t=>t.area)).map(a=>{const x=baseA.filter(t=>eqN(t.area,a)),r=realNow(x),m=metaHoje(x),
+      ok=x.filter(t=>t.pct>=100).length,lt=x.filter(t=>stAtv(t).k==='late').length,
+      cor=r>=m-0.05?'var(--dsm-green)':(metaOntem(x)-r>0.5?'var(--red)':'var(--dsm-orange)');
+    return `<div class="area ${eqN(F.area,a)?'sel':''}" data-area="${esc(a)}" style="border-left-color:${cor}" title="Clique para filtrar">
+      <div class="t">${esc(a)}</div>
+      <div class="v"><b style="color:${cor}">${r.toFixed(0)}%</b><span>meta hoje ${m.toFixed(0)}%<br>${ok}/${x.length} concl.${lt?` · <span style="color:var(--red);font-weight:700;font-size:10.5px">${lt} atras.</span>`:''}</span></div>
+      <div class="mini"><i style="width:${r}%;background:${cor}"></i><u style="left:${m}%"></u></div></div>`}).join('');
   $('#chartTitle').textContent='Curva S — Planejado x Real'+(F.lider?' · '+F.lider:'')+(F.dia?' · '+fmtDay(F.dia):'');
   const nUpd=tk.filter(t=>t.upd).length,lu=Math.max(0,...tk.map(t=>t.upd||0));
   $('#chartSub').textContent=`${filtText()} · ${tk.length} atividades · ${nUpd} com lançamento${lu?` · último lançamento ${fmtDT(lu)}`:''}`;
@@ -439,6 +456,7 @@ function renderPainel(){
 document.addEventListener('click',e=>{
   const l=e.target.closest('[data-lider]');if(l){setF('lider',F.lider===l.dataset.lider?'':l.dataset.lider);return}
   const d=e.target.closest('[data-dia]');if(d){setF('dia',F.dia===d.dataset.dia?'':d.dataset.dia);return}
+  const ar=e.target.closest('[data-area]');if(ar){setF('area',eqN(F.area,ar.dataset.area)?'':ar.dataset.area);return}
 });
 
 /* ===================== atividades ===================== */
