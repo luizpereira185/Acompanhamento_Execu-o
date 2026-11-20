@@ -59,6 +59,16 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .filters .in{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:8px;align-items:end;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
 .filters label{margin:0}
 .filters select{margin-top:3px;padding:7px 9px}
+.fl{font-size:11px;color:var(--muted);display:block;margin:0}
+.msel{position:relative;margin-top:3px}
+.mselBtn{width:100%;text-align:left;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:7px 26px 7px 9px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.mselBtn::after{content:'▾';position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.mselPop{position:absolute;left:0;right:0;top:calc(100% + 4px);min-width:200px;max-height:300px;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;z-index:20}
+.mselPop .opt{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg);padding:6px 8px;border-radius:6px;cursor:pointer}
+.mselPop .opt:hover{background:var(--bg)}
+.mselPop .opt input{width:auto;margin:0}
+.mselPop .acts{display:flex;gap:6px;border-bottom:1px solid var(--border);padding:2px 2px 6px;margin-bottom:4px}
+.mselPop .acts button{flex:1;border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;padding:5px;font:inherit;font-size:11px;cursor:pointer}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .chip{font-size:11px;border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--card));border-radius:20px;padding:2px 9px;cursor:pointer}
 
@@ -114,7 +124,8 @@ svg{width:100%;height:auto;overflow:visible;display:block}
 .obsRow{display:flex;gap:6px;margin-top:8px}
 .obsRow input{margin:0;font-size:11.5px;padding:6px 8px}
 .fotoBtn{display:flex;align-items:center;justify-content:center;width:36px;height:32px;flex-shrink:0;border:1px solid var(--border);border-radius:6px;background:var(--bg);cursor:pointer}
-.fotoPrev{margin-top:6px;display:flex;align-items:center;gap:8px}
+.fotoPrev{margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fotoItem{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px}
 .fotoPrev img{max-width:90px;max-height:70px;border-radius:6px;border:1px solid var(--border);object-fit:cover}
 .lnk{font-size:10.5px;color:var(--muted);cursor:pointer;text-decoration:underline}
 details.det{margin-top:6px;font-size:11.5px}
@@ -150,7 +161,7 @@ details.det div{white-space:pre-wrap;margin-top:4px;color:var(--muted)}
   <div class="filters" id="filters">
     <div class="in">
       <label>Líder<select id="fLider"></select></label>
-      <label>Dia<select id="fDia"></select></label>
+      <div class="fl">Dia(s)<div class="msel" id="fDiaBox"><button type="button" class="mselBtn" id="fDiaBtn">Todos os dias</button><div class="mselPop" id="fDiaPop" hidden></div></div></div>
       <label>Área<select id="fArea"></select></label>
       <button class="secondary" id="clearF" type="button">Limpar filtros</button>
     </div>
@@ -356,7 +367,9 @@ function byId(id){return DB.tasks.find(t=>t.id===id)}
 /* ===================== filtros ===================== */
 const F={lider:'',dia:'',area:''};
 function eqN(a,b){return norm(a)===norm(b)}
-function inDay(t,k){return t.ini<=k&&(t.fim||t.ini)>=k}
+function inDay(t,k){return String(k).split(',').some(d=>t.ini<=d&&(t.fim||t.ini)>=d)}
+function selDias(){return F.dia?F.dia.split(',').filter(Boolean).sort():[]}
+function fmtDias(){const d=selDias();return d.length===1?fmtDay(d[0]):d.map(k=>fmtDate(k).slice(0,5)).join(', ')}
 function filtered(){
   return DB.tasks.filter(t=>(!F.lider||eqN(t.lider,F.lider))&&(!F.area||eqN(t.area,F.area))&&(!F.dia||inDay(t,F.dia)));
 }
@@ -373,30 +386,39 @@ function fillFilters(){
   const dd=allDays(DB.tasks);
   setOpts($('#fLider'),'<option value="">Todos os líderes</option>'+lid.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join(''),F.lider);
   setOpts($('#fArea'),'<option value="">Todas as áreas</option>'+ar.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join(''),F.area);
-  setOpts($('#fDia'),'<option value="">Todos os dias</option>'+dd.map(k=>`<option value="${k}">${fmtDay(k)}${k===todayKey()?' (hoje)':''}</option>`).join(''),F.dia);
+  const sd=selDias().filter(k=>dd.includes(k));F.dia=sd.join(',');
+  $('#fDiaPop').innerHTML='<div class="acts"><button type="button" data-dacao="todos">Marcar todos</button><button type="button" data-dacao="limpar">Limpar</button></div>'+dd.map(k=>`<label class="opt"><input type="checkbox" value="${k}" ${sd.includes(k)?'checked':''}>${fmtDay(k)}${k===todayKey()?' (hoje)':''}</label>`).join('');
+  $('#fDiaBtn').textContent=!sd.length?'Todos os dias':(sd.length===1?fmtDay(sd[0]):`${sd.length} dias (acumulado): ${fmtDias()}`);
   $('#lideresList').innerHTML=lid.map(l=>`<option value="${esc(l)}">`).join('');
   $('#areasList').innerHTML=ar.map(l=>`<option value="${esc(l)}">`).join('');
   const who=localStorage.getItem(WHO_KEY)||'';
   setOpts($('#whoSel'),'<option value="">— escolha seu nome —</option>'+lid.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('')+'<option value="PPCM">PPCM / Planejamento (ver todos)</option>',who);
   if(dd.length)$('#subInfo').firstChild&&($('#subInfo').childNodes[0].textContent=`Parada de Manutenção · Mairinque · ${fmtDate(dd[0])} a ${fmtDate(dd[dd.length-1])} · ${DB.tasks.length} atividades`);
 }
-function setF(k,v){F[k]=v;const sel=$('#f'+k[0].toUpperCase()+k.slice(1)),o=[...sel.options].find(x=>norm(x.value)===norm(v));sel.value=o?o.value:'';renderAll()}
+function setF(k,v){F[k]=v;if(k==='dia'){fillFilters();renderAll();return}const sel=$('#f'+k[0].toUpperCase()+k.slice(1)),o=[...sel.options].find(x=>norm(x.value)===norm(v));sel.value=o?o.value:'';renderAll()}
 $('#fLider').onchange=e=>setF('lider',e.target.value);
-$('#fDia').onchange=e=>setF('dia',e.target.value);
+$('#fDiaBtn').onclick=e=>{e.stopPropagation();$('#fDiaPop').hidden=!$('#fDiaPop').hidden};
+$('#fDiaPop').addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('[data-dacao]');
+  if(b){setF('dia',b.dataset.dacao==='todos'?[...$('#fDiaPop').querySelectorAll('input')].map(i=>i.value).join(','):'')}});
+$('#fDiaPop').addEventListener('change',()=>setF('dia',[...$('#fDiaPop').querySelectorAll('input:checked')].map(i=>i.value).join(',')));
+document.addEventListener('click',e=>{if(!e.target.closest('#fDiaBox'))$('#fDiaPop').hidden=true});
 $('#fArea').onchange=e=>setF('area',e.target.value);
 $('#clearF').onclick=()=>{F.lider=F.dia=F.area='';fillFilters();renderAll()};
 
 /* ===================== planejado x real ===================== */
 // Janela planejada da atividade: do início do dia "Data início" até o fim do dia "Data fim".
 // Se o filtro de dia estiver ativo, a janela é recortada para aquele dia.
-function win(t){
-  let a=dayMs(t.ini),b=dayMs(t.fim||t.ini)+864e5;
-  if(F.dia){a=Math.max(a,dayMs(F.dia));b=Math.min(b,dayMs(F.dia)+864e5)}
-  return [a,b];
+// Com vários dias selecionados, a janela é recortada em cada dia escolhido e o planejado é acumulado neles.
+function segs(t){
+  const a=dayMs(t.ini),b=dayMs(t.fim||t.ini)+864e5,sd=selDias();
+  if(!sd.length)return [[a,b]];
+  return sd.map(k=>[Math.max(a,dayMs(k)),Math.min(b,dayMs(k)+864e5)]).filter(x=>x[1]>x[0]);
 }
+function win(t){const s=segs(t);return s.length?[s[0][0],s[s.length-1][1]]:[dayMs(t.ini),dayMs(t.ini)+864e5]}
+function frac(t,T){let tot=0,done=0;for(const [a,b] of segs(t)){tot+=b-a;done+=clamp(T-a,0,b-a)}return tot?done/tot:0}
 function plannedAt(tasks,T){
   if(!tasks.length)return 0;
-  let s=0;for(const t of tasks){const [a,b]=win(t);s+=clamp((T-a)/(b-a),0,1)}
+  let s=0;for(const t of tasks)s+=frac(t,T);
   return s/tasks.length*100;
 }
 // % de uma atividade em um instante, pelo histórico de lançamentos
@@ -468,16 +490,18 @@ function chartInner(tasks){
     let v;
     if(t===bounds[0])v=0;
     else if(t>=todayEnd||t===b&&b<=todayEnd&&t===bounds[bounds.length-1]&&t>Date.now())v=realNow(tasks);
-    else v=tasks.reduce((s2,x)=>{const [w0,w1]=win(x);return s2+Math.min(+x.pct||0,clamp((t-w0)/(w1-w0),0,1)*100)},0)/n;
+    else v=tasks.reduce((s2,x)=>s2+Math.min(+x.pct||0,frac(x,t)*100),0)/n;
     rl.push({x:X(t),y:Y(v),v});
   }
   const rp=rl.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
-  const dots=(arr,c,lab)=>arr.slice(1).map(p=>`<circle cx="${p.x}" cy="${p.y}" r="${lab?4:3}" fill="${c}"/>`+(lab?`<text x="${p.x}" y="${p.y-8}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${c}">${p.v.toFixed(0)}%</text>`:'')).join('');
-  return g+`<path d="${pp}" fill="none" stroke="var(--planned)" stroke-width="2.2" stroke-dasharray="6,4"/>`+dots(pl,'var(--planned)',false)+
-    (rl.length>1?`<path d="${rp}" fill="none" stroke="var(--actual)" stroke-width="2.8" stroke-linejoin="round"/>`+dots(rl,'var(--actual)',true):'');
+  // rótulo do planejado acima e do real abaixo quando o planejado está à frente (e vice-versa), para não sobrepor
+  const acima=(arr,o,i,plan)=>{const q=o[i];if(!q)return true;return plan?arr[i].v>=q.v:arr[i].v>q.v};
+  const dots=(arr,c,lab,plan)=>arr.map((p,i)=>i?`<circle cx="${p.x}" cy="${p.y}" r="${lab?4:3}" fill="${c}"/>`+(lab?`<text x="${p.x}" y="${acima(arr,plan?rl:pl,i,plan)?(p.y-8>=T+10?p.y-8:p.y+16):Math.min(H-B-5,p.y+16)}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${c}">${p.v.toFixed(0)}%</text>`:''):'').join('');
+  return g+`<path d="${pp}" fill="none" stroke="var(--planned)" stroke-width="2.2" stroke-dasharray="6,4"/>`+dots(pl,'var(--planned)',true,true)+
+    (rl.length>1?`<path d="${rp}" fill="none" stroke="var(--actual)" stroke-width="2.8" stroke-linejoin="round"/>`+dots(rl,'var(--actual)',true,false):'');
 }
 function filtText(){
-  const p=[];if(F.lider)p.push('Líder: '+F.lider);if(F.dia)p.push('Dia: '+fmtDay(F.dia));if(F.area)p.push('Área: '+F.area);
+  const p=[];if(F.lider)p.push('Líder: '+F.lider);if(F.dia)p.push((selDias().length>1?'Dias (acumulado): ':'Dia: ')+fmtDias());if(F.area)p.push('Área: '+F.area);
   return p.length?p.join(' · '):'Todas as atividades do inventário';
 }
 
@@ -501,7 +525,7 @@ function renderPainel(){
       <div class="t">${esc(a)}</div>
       <div class="v"><b style="color:${cor}">${r.toFixed(0)}%</b><span>meta hoje ${m.toFixed(0)}%<br>${ok}/${x.length} concl.${lt?` · <span style="color:var(--red);font-weight:700;font-size:10.5px">${lt} atras.</span>`:''}</span></div>
       <div class="mini"><i style="width:${r}%;background:${cor}"></i><u style="left:${m}%"></u></div></div>`}).join('');
-  $('#chartTitle').textContent='Curva S — Planejado x Real'+(F.lider?' · '+F.lider:'')+(F.dia?' · '+fmtDay(F.dia):'');
+  $('#chartTitle').textContent='Curva S — Planejado x Real'+(F.lider?' · '+F.lider:'')+(F.dia?' · '+(selDias().length>1?'acumulado '+fmtDias():fmtDias()):'');
   const nUpd=tk.filter(t=>t.upd).length,lu=Math.max(0,...tk.map(t=>t.upd||0));
   $('#chartSub').textContent=`${filtText()} · ${tk.length} atividades · ${nUpd} com lançamento${lu?` · último lançamento ${fmtDT(lu)}`:''}`;
   $('#chart').innerHTML=chartInner(tk);
@@ -515,11 +539,11 @@ function renderPainel(){
   const baseD=DB.tasks.filter(t=>(!F.lider||eqN(t.lider,F.lider))&&(!F.area||eqN(t.area,F.area)));
   const hk=todayKey();
   $('#days').innerHTML=allDays(baseD).map(k=>{const x=baseD.filter(t=>inDay(t,k)),r=realNow(x),ok=x.filter(t=>t.pct>=100).length;
-    return `<div class="day ${k===hk?'today':''} ${F.dia===k?'sel':''}" data-dia="${k}"><div class="d">${fmtDay(k)}${k===hk?' · hoje':''}</div><div class="n">${x.length} ativ. · ${ok} concl.</div><div class="p">${r.toFixed(0)}%</div><div class="mini"><i style="width:${r}%"></i></div></div>`}).join('')||'<div class="muted">Sem atividades.</div>';
+    return `<div class="day ${k===hk?'today':''} ${selDias().includes(k)?'sel':''}" data-dia="${k}"><div class="d">${fmtDay(k)}${k===hk?' · hoje':''}</div><div class="n">${x.length} ativ. · ${ok} concl.</div><div class="p">${r.toFixed(0)}%</div><div class="mini"><i style="width:${r}%"></i></div></div>`}).join('')||'<div class="muted">Sem atividades.</div>';
 }
 document.addEventListener('click',e=>{
   const l=e.target.closest('[data-lider]');if(l){setF('lider',F.lider===l.dataset.lider?'':l.dataset.lider);return}
-  const d=e.target.closest('[data-dia]');if(d){setF('dia',F.dia===d.dataset.dia?'':d.dataset.dia);return}
+  const d=e.target.closest('[data-dia]');if(d){const sd=selDias(),k=d.dataset.dia;setF('dia',(sd.includes(k)?sd.filter(x=>x!==k):[...sd,k]).sort().join(','));return}
   const ar=e.target.closest('[data-area]');if(ar){setF('area',eqN(F.area,ar.dataset.area)?'':ar.dataset.area);return}
 });
 
@@ -567,9 +591,9 @@ function rowHtml(t){
     <div class="obsRow">
       <input type="text" data-obs="${id}" placeholder="Observações..." value="${esc(t.obs)}">
       <input type="text" data-acao="${id}" placeholder="Pendência / ação..." value="${esc(t.acao)}">
-      <label class="fotoBtn" title="Anexar foto">📷<input type="file" accept="image/*" capture="environment" data-foto="${id}" hidden></label>
+      <label class="fotoBtn" title="Adicionar foto(s)">📷<input type="file" accept="image/*" multiple data-foto="${id}" hidden></label>
     </div>
-    ${t.foto?`<div class="fotoPrev"><img src="${t.foto}" alt="foto"><span class="lnk" data-rmfoto="${id}">✕ remover foto</span></div>`:''}
+    ${fotosOf(t).length?`<div class="fotoPrev">${fotosOf(t).map((f,i)=>`<div class="fotoItem"><img src="${f}" alt="foto ${i+1}"><span class="lnk" data-rmfoto="${id}" data-i="${i}">✕ remover</span></div>`).join('')}<label class="lnk" style="cursor:pointer">＋ adicionar foto<input type="file" accept="image/*" multiple data-foto="${id}" hidden></label></div>`:''}
   </div>`;
 }
 let pendingList=false;
@@ -609,7 +633,7 @@ document.addEventListener('change',e=>{
   const el=e.target;
   if(el.matches('[data-pct]')){const t=byId(el.dataset.pct);if(!t)return;
     lancar(t,el.value);el.blur();renderList(true);renderPainel();}
-  else if(el.matches('[data-foto]')&&el.files[0])processarFoto(el.files[0],el.dataset.foto);
+  else if(el.matches('[data-foto]')&&el.files.length){[...el.files].forEach(f=>processarFoto(f,el.dataset.foto));el.value=''}
 });
 document.addEventListener('click',e=>{
   const el=e.target;
@@ -617,8 +641,9 @@ document.addEventListener('click',e=>{
   else if(el.matches('[data-undo]')){const t=byId(el.dataset.undo);if(!t||!t.hist.length)return;
     if(!confirm('Desfazer o último lançamento desta atividade?'))return;
     t.hist.pop();const l=t.hist[t.hist.length-1];t.pct=l?l.p:0;t.upd=l?l.t:null;t.updBy=l?(l.by||''):'';save([t.id]);renderList(true);renderPainel()}
-  else if(el.matches('[data-rmfoto]')){const t=byId(el.dataset.rmfoto);if(t){t.foto=null;save([t.id]);renderList(true)}}
+  else if(el.matches('[data-rmfoto]')){const t=byId(el.dataset.rmfoto);if(t){const f=fotosOf(t);f.splice(+el.dataset.i||0,1);t.fotos=f;t.foto=null;save([t.id]);renderList(true)}}
 });
+function fotosOf(t){return Array.isArray(t.fotos)?t.fotos.filter(Boolean):(t.foto?[t.foto]:[])}
 function processarFoto(file,id){
   const t=byId(id);if(!t)return;
   const rd=new FileReader();
@@ -626,7 +651,7 @@ function processarFoto(file,id){
     img.onload=()=>{const sc=Math.min(1,560/img.width),cv=document.createElement('canvas');
       cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
       cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      t.foto=cv.toDataURL('image/jpeg',0.6);save([t.id]);renderList(true)};
+      t.fotos=[...fotosOf(t),cv.toDataURL('image/jpeg',0.6)];t.foto=null;save([t.id]);renderList(true)};
     img.onerror=()=>alert('Não foi possível processar essa imagem.');
     img.src=ev.target.result};
   rd.readAsDataURL(file);
@@ -742,7 +767,7 @@ $('#sheetFile').onchange=async e=>{
 $('#importBtn').onclick=()=>{
   if(!PEND)return;const have=new Map(DB.tasks.map(t=>[t.key,t])),ids=[];let add=0,upd=0,rm=0;
   for(const r of PEND.rows){const t=have.get(r.key);
-    if(t){if(t.edited){continue}const keep={pct:t.pct,hist:t.hist,upd:t.upd,updBy:t.updBy,obs:t.obs,acao:t.acao,foto:t.foto};Object.assign(t,newTask(r),keep);upd++;ids.push(t.id)}
+    if(t){if(t.edited){continue}const keep={pct:t.pct,hist:t.hist,upd:t.upd,updBy:t.updBy,obs:t.obs,acao:t.acao,foto:t.foto,fotos:t.fotos};Object.assign(t,newTask(r),keep);upd++;ids.push(t.id)}
     else{const n=newTask(r);DB.tasks.push(n);add++;ids.push(n.id)}}
   if($('#rmFora')&&$('#rmFora').checked){for(const t of PEND.fora)if(!(t.hist||[]).length){DB.tasks=DB.tasks.filter(x=>x!==t);if(window.__fbDelete)window.__fbDelete(t.id);rm++}}
   save(ids);PEND=null;$('#importBtn').disabled=true;$('#importPrev').innerHTML='';$('#sheetFile').value='';
@@ -788,7 +813,7 @@ function gerarRelatorio(){
     html+=`<section class="page"><h1>LISTA DE ATIVIDADES</h1><table class="lst"><thead><tr><th>#</th><th>Líder</th><th style="width:34%">Atividade</th><th>Área / Equip.</th><th>Datas</th><th>%</th><th>Status</th><th style="width:20%">Obs. / pendência</th></tr></thead><tbody>${part.map(t=>{const s=stAtv(t);return `<tr><td>${esc(t.item)}</td><td>${esc(t.lider)}</td><td>${esc(t.name)}${t.ordem?`<br><span class="muted">Ordem ${esc(t.ordem)}</span>`:''}</td><td>${esc(t.area)}<br><span class="muted">${esc(t.equip)}</span></td><td>${fmtDate(t.ini)}${t.fim!==t.ini?' → '+fmtDate(t.fim):''}</td><td><b>${t.pct}%</b><div class="pbar"><i style="width:${t.pct}%;background:${s.cor}"></i></div></td><td style="color:${s.cor};font-weight:700">${t.manual?'<span style="color:#8a3f97">Adicional</span><br>':''}${s.txt}</td><td>${esc([t.obs,t.acao].filter(Boolean).join(' · '))}${t.upd?`<br><span class="muted">${fmtDT(t.upd)}${t.updBy?' · '+esc(t.updBy):''}</span>`:''}</td></tr>`}).join('')}</tbody></table>${foot(3+p)}</section>`;
   }
   // fotos
-  const fotos=tk.filter(t=>t.foto);
+  const fotos=tk.flatMap(t=>fotosOf(t).map(f=>({...t,foto:f})));
   if(fotos.length)html+=`<section class="page"><h1>REGISTRO FOTOGRÁFICO</h1><div class="fotos">${fotos.slice(0,8).map(t=>`<div><img src="${t.foto}"><div class="small"><b>#${esc(t.item)}</b> ${esc(t.name)} · ${t.pct}%</div></div>`).join('')}</div>${fotos.length>8?`<div class="small">+${fotos.length-8} fotos não exibidas.</div>`:''}<div class="foot"><span>Inventário 2026</span><span>Anexo</span></div></section>`;
   const css=`@page{size:A4 landscape;margin:0}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#1a1d23;background:#888}
@@ -891,6 +916,7 @@ async function flush(){
       const t = DB.tasks.find(x=>x.id===id); if(!t) continue;
       let data = {...t};
       if(JSON.stringify(data).length > MAX_DOC) data.foto = null;
+      if(Array.isArray(data.fotos)){ data.fotos=[...data.fotos]; while(data.fotos.length && JSON.stringify(data).length > MAX_DOC) data.fotos.pop(); }
       jobs.push(setDoc(doc(db, COL, id), {...data, _syncAt: serverTimestamp()}));
     }
     await Promise.all(jobs);
